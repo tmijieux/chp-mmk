@@ -1,0 +1,10 @@
+version "0.1"
+package "projCHP"
+
+purpose "solve EDPs with Schwarz alternating domain decomposition method"
+
+
+option "function" f "choose method" 
+       int optional default="0"
+option "list-function" l "list available function" flag off
+
