@@ -44,7 +44,7 @@ struct gengetopt_args_info
   const char *function_help; /**< @brief choose method help description.  */
   int list_function_flag;	/**< @brief list available function (default=off).  */
   const char *list_function_help; /**< @brief list available function help description.  */
-  
+
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
@@ -139,7 +139,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure 
+ * Initializes all the fields a cmdline_parser_params structure
  * to their default values
  * @param params the structure to initialize
  */

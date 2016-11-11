@@ -6,7 +6,7 @@ program chp
   character(len=20)::parametres='param.txt'
   integer::choixT
   real*8::start,finish
-  
+
   write(*,*) "1.Stationnaire 2.Instationnaire"
   read(*,*) choixT
   if(choixT==1)then
@@ -28,7 +28,7 @@ contains
     integer::Nx,Ny,choixF,i,j
     real*8::Lx,Ly,D,dx,dy,B,Cx,Cy
     real*8,dimension(:),allocatable::X,Y,U,Uexacte,RHS,f,g,h
-    
+
     call cpu_time(start)
 
     open(unit=10,file=parametres)
@@ -50,7 +50,7 @@ contains
 
     call Init(X,Y,dx,dy,Nx,Ny)
 
-    B=2*D/dx**2+2*D/dy**2 
+    B=2*D/dx**2+2*D/dy**2
     Cx=-D/dx**2
     Cy=-D/dy**2
     U=0.
@@ -134,7 +134,7 @@ contains
     dt=Tmax/Nit
 
     call Init(X,Y,dx,dy,Nx,Ny)
-    
+
     !B=1+2*D*dt/dx**2+2*D*dt/dy**2
     !Cx=-D*dt/dx**2
     !Cy=-D*dt/dy**2
@@ -150,6 +150,8 @@ contains
        !RHS=U0+dt*f
        RHS=U0/dt+f
        call CalculRHS(Cx,Cy,h,g,RHS)
+       !write(*,*) RHS
+
        call grad_conj(Nx,Ny,B,Cx,Cy,U,RHS)
        U0=U
 
@@ -167,7 +169,8 @@ contains
           end if
           open(unit=i+11,file=filename)
           call ecriture(i+11,X,Y,U)
-          close(i+11)
+          cLose(i+11)
+          !write(*,*) "coucou",i
        end if
 
     end do

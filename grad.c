@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include <cblas.h>
 
+#include "cblas.h"
 #include "util.h"
 #include "grad.h"
 
@@ -14,22 +14,23 @@ void matrix_5diag_conjugate_gradient(
     double const *rhs, double *X)
 {
     int const N = Nx*Ny;
+
     double *P = tdp_vector_new(N);
     double *Q = tdp_vector_new(N);
     double *R = tdp_vector_new(N);
+    double *Ax = tdp_vector_new(N);
 
-    cblas_dcopy(N, rhs, 1, P, 1);
+    matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
     cblas_dcopy(N, rhs, 1, R, 1);
+    cblas_daxpy(N, -1.0, Ax, 1, R, 1);
+    cblas_dcopy(N, R, 1, P, 1);
+    free(Ax);
 
     double gammaNew = cblas_ddot(N, R, 1, R, 1);
-    if (gammaNew < SQUARE(EPSILON))
-        return;
-
-    for (int k = 0; k < MAX_NB_ITER; ++k) {
+    int k;
+    for (k = 0; k < MAX_NB_ITER; ++k) {
         matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, P, Q);
-
-        double Tau = cblas_ddot(N, P, 1, Q, 1);
-        double alpha = gammaNew / Tau;
+        double alpha = gammaNew / cblas_ddot(N, P, 1, Q, 1);
 
         cblas_daxpy(N, alpha, P, 1, X, 1);
         cblas_daxpy(N, -alpha, Q, 1, R, 1);
@@ -37,14 +38,13 @@ void matrix_5diag_conjugate_gradient(
         double gammaOld = gammaNew;
         gammaNew = cblas_ddot(N, R, 1, R, 1);
 
-        if (gammaNew < SQUARE(EPSILON))
+        if (gammaNew <= SQUARE(EPSILON))
             break;
 
         double beta = gammaNew / gammaOld;
         cblas_dscal(N, beta, P, 1);
         cblas_daxpy(N, 1.0, R, 1, P, 1);
     }
-
     free(P);
     free(Q);
     free(R);

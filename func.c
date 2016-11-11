@@ -43,7 +43,7 @@ mU1(int const Nx, int const Ny,
     double const Lx, double const Ly, double *U)
 {
     for (int j = 0; j < Ny; ++j) {
-        double yy = Y[j] * (Ly-Y[j]);    
+        double yy = Y[j] * (Ly-Y[j]);
         for (int i = 0; i < Nx; ++i)
             U[Nx*j+i] = X[i] * (Lx-X[i]) * yy;
     }
@@ -77,7 +77,7 @@ static void f2(int const Nx, int const Ny,
 {
     for (int j = 0; j < Ny; ++j) {
         double s = sin(X[j]);
-        for (int i = 0; i < Nx; ++i) 
+        for (int i = 0; i < Nx; ++i)
             F[Nx*j+i] = cos(Y[i]) + s;
     }
 }
@@ -92,7 +92,7 @@ mU2(int const Nx, int const Ny,
 
     for (int j = 0; j < Ny; ++j) {
         double c = cos(Y[j]);
-        for (int i = 0; i < Nx; ++i) 
+        for (int i = 0; i < Nx; ++i)
             U[Nx*j+i] = sin(X[i]) + c;
     }
 }
@@ -102,8 +102,8 @@ f3(int const Nx, int const Ny,
    double const *X, double const *Y,
    double *F, double Lx, double Ly, double t)
 {
-    double c = cos(M_PI*t/2);
-    
+    double c = cos(M_PI*t/2.0);
+
     for (int j = 0; j < Ny; ++j) {
         double e = exp(-SQUARE(Y[j] - 0.5*Ly)) * c;
         for (int i = 0; i < Nx; ++i)
@@ -112,7 +112,7 @@ f3(int const Nx, int const Ny,
 }
 
 REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
-                  UNSTATIONARY, 
+                  UNSTATIONARY,
                   zero, zero, NULL, f3, NULL);
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),

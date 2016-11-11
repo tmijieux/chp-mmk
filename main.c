@@ -1,5 +1,3 @@
-#ifndef MAIN_H
-#define MAIN_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -85,7 +83,7 @@ stationary(char const *filename, struct projchp_method *method)
     int Nx = 100, Ny = 100;
     double Lx = 10.0, Ly = 10.0, D = 1.0;
 
-    //read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
+    read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
 
     double *U = tdp_vector_new(Nx*Ny);
     double *Uexact = tdp_vector_new(Nx*Ny);
@@ -94,8 +92,6 @@ stationary(char const *filename, struct projchp_method *method)
     double *h = tdp_vector_new(2*Ny); // right-left conditions
     double *X = tdp_vector_new(Nx);
     double *Y = tdp_vector_new(Ny);
-
-    D = 1.0; /* ecrase la valeur lue dans le fichier? */
 
     double dx = Lx / (Nx + 1);
     double dy = Ly / (Ny + 1);
@@ -124,24 +120,21 @@ unstationary(char const *filename, struct projchp_method *method)
 {
     int Nx = 100, Ny = 100;
     double Lx = 10.0, Ly = 10.0, D = 1.0;
+    read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
 
-    //read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
-    
     create_directory("sol");
     int const N = Nx * Ny;
 
-    double *U = tdp_vector_new(Nx*Ny);
-    double *U0 = tdp_vector_new(Nx*Ny);
-    /* double *U4 = tdp_vector_new(Nx*Ny);
-       double *U8 = tdp_vector_new(Nx*Ny); */
-    double *Uexact = tdp_vector_new(Nx*Ny);
-    double *RHS = tdp_vector_new(Nx*Ny);
+    double *U = tdp_vector_new(N);
+    double *U0 = tdp_vector_new(N);
+    /* double *U4 = tdp_vector_new(N);
+       double *U8 = tdp_vector_new(N); */
+    double *Uexact = tdp_vector_new(N);
+    double *RHS = tdp_vector_new(N);
     double *g = tdp_vector_new(2*Nx); // bottom-top conditions
     double *h = tdp_vector_new(2*Ny); // right-left conditions
     double *X = tdp_vector_new(Nx);
     double *Y = tdp_vector_new(Ny);
-
-    D = 1.0; /* ecrase la valeur lue dans le fichier? */
 
     double const Tmax = 10.0;
     int const Nit = 2000;
@@ -151,7 +144,7 @@ unstationary(char const *filename, struct projchp_method *method)
 
     projchp_grid_init(X, Y, dx, dy, Nx, Ny);
 
-    double B = 1.0 / dt + 2 * D / SQUARE(dx) + 2 * D / SQUARE(dy);
+    double B = 1.0 / dt + 2.0 * D / SQUARE(dx) + 2.0 * D / SQUARE(dy);
     double Cx = -D / SQUARE(dx);
     double Cy = -D / SQUARE(dy);
 
@@ -162,6 +155,7 @@ unstationary(char const *filename, struct projchp_method *method)
         method->fu(Nx, Ny, X, Y, RHS, Lx, Ly, t);
         cblas_daxpy(N, 1.0 / dt, U0, 1, RHS, 1);
         vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, RHS);
+
         matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
         cblas_dcopy(N, U, 1, U0, 1);
 
@@ -198,15 +192,15 @@ projchp_get_method_by_id(unsigned idx)
 static void
 solve_equation(struct gengetopt_args_info *opt)
 {
-
     struct projchp_method *m;
     m = projchp_get_method_by_id(opt->function_arg);
     printf("Choosen function: '%s'\n", m->name);
+    char const *filename = "param.txt";
 
     if (m->type == PROJCHP_STATIONARY)
-        stationary("param.txt", m);
+        stationary(filename, m);
     else if (m->type == PROJCHP_UNSTATIONARY)
-        unstationary("param.txt", m);
+        unstationary(filename, m);
     else
         projchp_error("invalid method type");
 }
@@ -257,5 +251,3 @@ int main(int argc, char *argv[])
     MPI_Finalize();
     return EXIT_SUCCESS;
 }
-
-#endif // MAIN_H

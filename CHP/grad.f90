@@ -8,24 +8,26 @@ contains
     real*8,intent(inout),dimension(Nx*Ny)::X
     real*8,intent(in),dimension(Nx*Ny)::rhs
     real*8,intent(in)::B,Cx,Cy
-    real*8,dimension(Nx*Ny)::w,d,R,Rnext,Ax
+    real*8,dimension(Nx*Ny)::P,Q,R,Ax
     integer::k
-    integer,parameter::niter=20000000
-    real*8,parameter::eps=1e-5
-    real*8::beta,alpha
+    integer,parameter :: niter=20000000
+    real*8,parameter :: eps=1e-5
+    real*8::beta,alpha,gammaNew,gammaOld
 
     call prodAx(B,Cx,Cy,X,Nx,Ny,Ax)
-    R=Ax-rhs
-    d=R
+    R=rhs-Ax
+    P=R
     k=0
-    do while(norme(R)>eps .and. k<=niter)
-       call prodAx(B,Cx,Cy,d,Nx,Ny,w)
-       alpha=dot_product(d,R)/dot_product(d,w)
-       X=X-alpha*d
-       Rnext=R-alpha*w
-       beta=norme(Rnext)**2/norme(R)**2
-       d=Rnext+beta*d
-       R=Rnext
+    gammaNew = dot_product(R, R)
+    do while(gammaNew>eps .and. k<=niter)
+       call prodAx(B,Cx,Cy,P,Nx,Ny,Q)
+       alpha = gammaNew / dot_product(P,Q)
+       X=X+alpha*P
+       R=R-alpha*Q
+       gammaOld = gammaNew;
+       gammaNew = dot_product(R, R)
+       beta = gammaNew/gammaOld
+       P=R+beta*P
        k=k+1
     end do
   end subroutine grad_conj
@@ -39,7 +41,6 @@ contains
 
     Nx=size(g)/2
     Ny=size(h)/2
-    write(*,*) Nx, Ny, size(RHS)
 
     do i=1, size(RHS)
        if (i<=Nx) then
@@ -88,16 +89,4 @@ contains
     AX(Nx*Ny)=B*X(Nx*Ny)+Cx*X(Nx*Ny-1)+Cy*X(Nx*Ny-Nx)
 
   end subroutine prodAx
-
-  real*8 function norme(X)
-    implicit none
-    real*8,dimension(:)::X
-    integer::i
-    norme=0.
-    do i=1,size(X)
-       norme=norme+X(i)*X(i)
-    end do
-    norme=sqrt(norme)
-  end function norme
-
 end module grad
