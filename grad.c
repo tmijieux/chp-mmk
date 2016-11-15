@@ -20,6 +20,8 @@ void matrix_5diag_conjugate_gradient(
     double *R = tdp_vector_new(N);
     double *Ax = tdp_vector_new(N);
 
+    double nB = cblas_ddot(N, rhs, 1, rhs, 1);
+
     matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
     cblas_dcopy(N, rhs, 1, R, 1);
     cblas_daxpy(N, -1.0, Ax, 1, R, 1);
@@ -38,7 +40,7 @@ void matrix_5diag_conjugate_gradient(
         double gammaOld = gammaNew;
         gammaNew = cblas_ddot(N, R, 1, R, 1);
 
-        if (gammaNew <= SQUARE(EPSILON))
+        if ((gammaNew / nB) <= SQUARE(EPSILON))
             break;
 
         double beta = gammaNew / gammaOld;

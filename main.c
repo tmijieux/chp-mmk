@@ -3,7 +3,6 @@
 #include <mpi.h>
 #include <math.h>
 #include <assert.h>
-#include <cblas.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -13,6 +12,7 @@
 #include "util.h"
 #include "func.h"
 #include "grad.h"
+#include "cblas.h"
 
 static void
 create_directory(char const *dirname)
