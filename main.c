@@ -85,6 +85,7 @@ stationary(char const *filename, struct projchp_method *method)
 
     read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
 
+    double *U0 = tdp_vector_new(Nx*Ny);
     double *U = tdp_vector_new(Nx*Ny);
     double *Uexact = tdp_vector_new(Nx*Ny);
     double *RHS = tdp_vector_new(Nx*Ny);
@@ -105,7 +106,10 @@ stationary(char const *filename, struct projchp_method *method)
     projchp_method_call(method, Nx, Ny, Uexact, X, Y, RHS, g, h, Lx, Ly);
 
     vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, RHS);
-    matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
+    cblas_dcopy(Nx*Ny, U0, 1, U, 1);
+    //matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
+    matrix_5diag_jacobi(Nx, Ny, B, Cx, Cy, RHS, U0, U);
+    //matrix_5diag_gauss_seidel(Nx, Ny, B, Cx, Cy, RHS, U0, U);
 
     projchp_output("numeric.dat", Nx, Ny, X, Y, U);
     projchp_output("exact.dat", Nx, Ny, X, Y, Uexact);
