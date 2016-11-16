@@ -50,23 +50,25 @@ mU1(int const Nx, int const Ny,
 }
 
 static void
-g2(int const Nx, double const *X, double *G, double Ly)
+g2(int const Nx, double const *X, double *G, double Lx_min, double Ly)
 {
+    double c = cos(Lx_min);
     for (int i = 0; i < Nx; ++i)
-        G[i] = sin(X[i]) + 1.0 /* == cos(0.0) */;
+        G[i] = sin(X[i]) + c;
 
-    double c = cos(Ly);
+    c = cos(Ly);
     for (int i = 0; i < Nx; ++i)
         G[Nx+i] = sin(X[i]) + c;
 }
 
 static void
-h2(int const Ny, double const *Y, double *G, double Lx)
+h2(int const Ny, double const *Y, double *G, double Lx_min, double Lx_max)
 {
+    double s = sin(Lx_min);
     for (int i = 0; i < Ny; ++i)
-        G[i] = cos(Y[i]) /* + sin(0.0) */;
+        G[i] = cos(Y[i]) + s;
 
-    double c = sin(Lx);
+    double c = sin(Lx_max);
     for (int i = 0; i < Ny; ++i)
         G[Ny+i] = cos(Y[i]) + c;
 }
@@ -76,9 +78,9 @@ static void f2(int const Nx, int const Ny,
                double *F)
 {
     for (int j = 0; j < Ny; ++j) {
-        double s = sin(X[j]);
+        double s = cos(Y[j]);
         for (int i = 0; i < Nx; ++i)
-            F[Nx*j+i] = cos(Y[i]) + s;
+            F[Nx*j+i] = sin(X[i]) + s;
     }
 }
 
@@ -113,7 +115,7 @@ f3(int const Nx, int const Ny,
 
 REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
                   UNSTATIONARY,
-                  zero, zero, NULL, f3, NULL);
+                  zero, one, NULL, f3, NULL);
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),
                   STATIONARY,

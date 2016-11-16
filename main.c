@@ -25,21 +25,22 @@ projchp_method_call(struct projchp_method *method,
                     int const Nx, int const Ny,
                     double *Uexact, double *X, double *Y,
                     double *f, double *g, double *h,
-                    double const Lx, double const Ly)
+                    double const Lx_min, double const Lx_max,
+                    double const Ly)
 {
     method->g(Nx, X, g, Ly);
-    method->h(Ny, Y, h, Lx);
+    method->h(Ny, Y, h, Lx_min, Lx_max);
     method->f(Nx, Ny, X, Y, f);
-    method->mU(Nx, Ny, X, Y, Lx, Ly, Uexact);
+    method->mU(Nx, Ny, X, Y, Lx_min, Lx_max, Ly, Uexact);
 }
 
 static void
 projchp_grid_init(double *X, double *Y,
-                  double dx, double dy,
+                  double dx, double dy, double Lx_min,
                   int const Nx, int const Ny)
 {
     for (int i = 0; i < Nx; ++i)
-        X[i] = i*dx;
+        X[i] = Lx_min + i*dx;
     for (int i = 0; i < Ny; ++i)
         Y[i] = i*dy;
 }
@@ -78,31 +79,24 @@ read_param(char const *filename, int *Nx, int *Ny,
 }
 
 static void
-stationary(char const *filename, struct projchp_method *method)
+stationary(int Nx, int Ny, double Lx_min, double Lx_max,
+           struct projchp_method *method)
 {
-    int Nx = 100, Ny = 100;
-    double Lx = 10.0, Ly = 10.0, D = 1.0;
-
-    read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
-
-    double *U = tdp_vector_new(Nx*Ny);
-    double *Uexact = tdp_vector_new(Nx*Ny);
+    double D = 1.0, Ly = 1.0;
     double *RHS = tdp_vector_new(Nx*Ny);
-    double *g = tdp_vector_new(2*Nx); // bottom-top conditions
-    double *h = tdp_vector_new(2*Ny); // right-left conditions
     double *X = tdp_vector_new(Nx);
     double *Y = tdp_vector_new(Ny);
-
+    
     double dx = Lx / (Nx + 1);
     double dy = Ly / (Ny + 1);
 
-    projchp_grid_init(X, Y, dx, dy, Nx, Ny);
 
     double B = 2 * D / SQUARE(dx) + 2 * D / SQUARE(dy);
     double Cx = -D / SQUARE(dx);
     double Cy = -D / SQUARE(dy);
 
-    projchp_method_call(method, Nx, Ny, Uexact, X, Y, RHS, g, h, Lx, Ly);
+    projchp_method_call(method, Nx, Ny, Uexact, X, Y,
+                        RHS, g, h, Lx_min, Lx_max, Ly);
 
     vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, RHS);
     matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
@@ -116,11 +110,10 @@ stationary(char const *filename, struct projchp_method *method)
 }
 
 static void
-unstationary(char const *filename, struct projchp_method *method)
+unstationary(int Nx, int Ny, double Lx_max, double Lx_min,
+             double Ly, struct projchp_method *method)
 {
-    int Nx = 100, Ny = 100;
-    double Lx = 10.0, Ly = 10.0, D = 1.0;
-    read_param(filename, &Nx, &Ny, &Lx, &Ly, &D);
+    double D = 1.0;
 
     create_directory("sol");
     int const N = Nx * Ny;
@@ -138,7 +131,7 @@ unstationary(char const *filename, struct projchp_method *method)
 
     double const Tmax = 10.0;
     int const Nit = 2000;
-    double dx = Lx / (Nx + 1);
+    double dx = (Lx_max-Lx_min) / (Nx + 1);
     double dy = Ly / (Ny + 1);
     double dt = Tmax / Nit;
 
@@ -190,17 +183,17 @@ projchp_get_method_by_id(unsigned idx)
 }
 
 static void
-solve_equation(struct gengetopt_args_info *opt)
+solve_equation(int Nx, int Ny, double Lx, double Ly,
+               struct gengetopt_args_info *opt)
 {
     struct projchp_method *m;
     m = projchp_get_method_by_id(opt->function_arg);
     printf("Choosen function: '%s'\n", m->name);
-    char const *filename = "param.txt";
-
+    
     if (m->type == PROJCHP_STATIONARY)
-        stationary(filename, m);
+        stationary(Nx, Ny, Lx, Ly, m);
     else if (m->type == PROJCHP_UNSTATIONARY)
-        unstationary(filename, m);
+        unstationary(Nx, Ny, Lx, Ly, m);
     else
         projchp_error("invalid method type");
 }
@@ -221,6 +214,37 @@ handle_opt(struct gengetopt_args_info *opt)
     }
 }
 
+struct proc {
+    int rank;
+    int size;
+};
+
+static void
+solve_equation_schwarz(struct proc *p, struct gengetopt_args_info *opt)
+{
+    double bandeLength = 1.0 / (double)p->size;
+    int r = opt->resolution_arg;
+    int Nx = p->size * r;
+
+    double *g = tdp_vector_new(2*Nx); // bottom-top conditions
+    double *h = tdp_vector_new(2*Ny); // right-left conditions
+    
+    double xMin, xMax;
+    xMin = (p->rank * r) - 1.0;
+    xMax = ((p->rank+1) * r) + 1.0;
+    xMin = max(0, xMin);
+    xMax = min(Nx, xMax);
+
+    xMin /= Nx;
+    xMax /= Nx;
+    
+    projchp_grid_init(X, Y, dx, dy, Lx_min, Nx, Ny);
+    
+    while (0) {
+        solve_equation(r, r, xMin, xMax, opt);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     int group_size, rank;
@@ -229,9 +253,10 @@ int main(int argc, char *argv[])
     cmdline_parser(argc, argv, &opt);
     handle_opt(&opt);
 
+    struct proc P;
     MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &group_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &P.size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &P.rank);
 
     //assert( ((void)"il faut exactement 2 processus MPI", group_size == 2) );
 

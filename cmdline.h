@@ -44,11 +44,15 @@ struct gengetopt_args_info
   const char *function_help; /**< @brief choose method help description.  */
   int list_function_flag;	/**< @brief list available function (default=off).  */
   const char *list_function_help; /**< @brief list available function help description.  */
-
+  int resolution_arg;	/**< @brief nombre de points par bandes horizontales (default='10').  */
+  char * resolution_orig;	/**< @brief nombre de points par bandes horizontales original value given at command line.  */
+  const char *resolution_help; /**< @brief nombre de points par bandes horizontales help description.  */
+  
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
   unsigned int list_function_given ;	/**< @brief Whether list-function was given.  */
+  unsigned int resolution_given ;	/**< @brief Whether resolution was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */
@@ -139,7 +143,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure
+ * Initializes all the fields a cmdline_parser_params structure 
  * to their default values
  * @param params the structure to initialize
  */

@@ -12,16 +12,20 @@ struct projchp_method {
     enum projchp_method_type type;
     const char *name;
     void (*g)(int const N, double const *A, double *B, double param);
-    void (*h)(int const N, double const *A, double *B, double param);
+    void (*h)(int const N, double const *A, double *B,
+              double Lx_min, double Lx_max);
+    
     void (*f)(int const Nx, int const Ny,
               double const *X, double const *Y,
               double *F);
     void (*fu)(int const Nx, int const Ny,
                double const *X, double const *Y,
-               double *F, double const Lx, double const Ly, double const t);
+               double *F, double const Lx_min, double Lx_max,
+               double const Ly, double const t);
     void (*mU)(int const Nx, int const Ny,
                double const *X, double const *Y,
-               double const Lx, double const Ly, double *U);
+               double const Lx_min, double const Lx_max,
+               double const Ly, double *U);
     struct projchp_method *next;
 };
 
