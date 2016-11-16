@@ -1,6 +1,16 @@
 #ifndef PROJCHP_GRAD_H
 #define PROJCHP_GRAD_H
 
+void matrix_5diag_jacobi(
+  int const Nx, int const Ny,
+  double const B, double const Cx, double const Cy,
+  double const *rhs, double *X0, double *X);
+
+void matrix_5diag_gauss_seidel(
+  int const Nx, int const Ny,
+  double const B, double const Cx, double const Cy,
+  double const *rhs, double *X0, double *X);
+
 void matrix_5diag_conjugate_gradient(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,

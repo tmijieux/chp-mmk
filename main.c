@@ -83,6 +83,8 @@ stationary(int Nx, int Ny, double Lx_min, double Lx_max,
            struct projchp_method *method)
 {
     double D = 1.0, Ly = 1.0;
+
+    double *U0 = tdp_vector_new(Nx*Ny);
     double *RHS = tdp_vector_new(Nx*Ny);
     double *X = tdp_vector_new(Nx);
     double *Y = tdp_vector_new(Ny);
@@ -99,7 +101,10 @@ stationary(int Nx, int Ny, double Lx_min, double Lx_max,
                         RHS, g, h, Lx_min, Lx_max, Ly);
 
     vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, RHS);
-    matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
+    cblas_dcopy(Nx*Ny, U0, 1, U, 1);
+    //matrix_5diag_conjugate_gradient(Nx, Ny, B, Cx, Cy, RHS, U);
+    matrix_5diag_jacobi(Nx, Ny, B, Cx, Cy, RHS, U0, U);
+    //matrix_5diag_gauss_seidel(Nx, Ny, B, Cx, Cy, RHS, U0, U);
 
     projchp_output("numeric.dat", Nx, Ny, X, Y, U);
     projchp_output("exact.dat", Nx, Ny, X, Y, Uexact);
