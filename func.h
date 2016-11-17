@@ -1,57 +1,64 @@
-#ifndef PROJCHP_FUNC_H
-#define PROJCHP_FUNC_H
+#ifndef CHP_FUNC_H
+#define CHP_FUNC_H
 
 #include <stdlib.h>
 
-enum projchp_method_type {
-    PROJCHP_STATIONARY,
-    PROJCHP_UNSTATIONARY,
+enum chp_func_type {
+    CHP_STATIONARY,
+    CHP_UNSTATIONARY,
 };
 
-struct projchp_method {
-    enum projchp_method_type type;
+struct chp_func
+{
+    enum chp_func_type type;
     const char *name;
-    void (*g)(int const N, double const *A, double *B, double param);
-    void (*h)(int const N, double const *A, double *B,
-              double Lx_min, double Lx_max);
-    
-    void (*f)(int const Nx, int const Ny,
-              double const *X, double const *Y,
-              double *F);
-    void (*fu)(int const Nx, int const Ny,
-               double const *X, double const *Y,
-               double *F, double const Lx_min, double Lx_max,
-               double const Ly, double const t);
-    void (*mU)(int const Nx, int const Ny,
-               double const *X, double const *Y,
-               double const Lx_min, double const Lx_max,
-               double const Ly, double *U);
-    struct projchp_method *next;
+
+    void (*rhs)(int const Nx,int const Ny,double const*X, double const*Y,double*F);
+    void (*rhs_unsta)(int const Nx,int const Ny,double const*X,double const*Y,
+                      double *F, double const Lx, double const Ly,
+                      double const t);
+
+    void (*bottom)(int const N,double const*A,double*B,double value);
+    void (*top)(int const N,double const*A,double*B,double value);
+    void (*right)(int const N,double const*A,double*B,double value);
+    void (*left)(int const N,double const*A,double*B,double value);
+
+    void (*U)(int const Nx, int const Ny, double const *X, double const *Y,
+              double const Lx, double const Ly, double *U);
+
+    struct chp_func *next;
 };
 
-extern unsigned method_list_length;
-extern struct projchp_method *method_list;
+extern unsigned func_list_length;
+extern struct chp_func *func_list;
 
 #define PASTE2_(x,y) x##y
 #define PASTE2(x,y) PASTE2_(x, y)
 
-#define REGISTER_FUNCTION(method_name, type_, g_, h_, f_, fu_, mU_)     \
-    static void __attribute__((constructor))                            \
-    PASTE2(_register_method_,__COUNTER__)(void)                         \
-    {                                                                   \
-        static struct projchp_method meth = {                           \
-            .type = PROJCHP_##type_,                                    \
-            .name = #method_name   "  ("#type_")",                      \
-            .g = g_,                                                    \
-            .h = h_,                                                    \
-            .f = f_,                                                    \
-            .fu = fu_,                                                  \
-            .mU = mU_,                                                  \
-            .next = NULL,                                               \
-        };                                                              \
-        meth.next = method_list;                                        \
-        method_list = &meth;                                            \
-        ++ method_list_length;                                          \
+#define REGISTER_FUNCTION(func_name, type_, bottom_, top_,      \
+                          right_, left_, rhs_, rhs_unsta_, U_)  \
+    static void __attribute__((constructor))                    \
+    PASTE2(_register_func_,__COUNTER__)(void)                   \
+    {                                                           \
+        static struct chp_func meth = {                         \
+            .type = CHP_##type_,                                \
+            .name = #func_name   "  ("#type_")",                \
+            .bottom = bottom_,                                  \
+            .top = top_,                                        \
+            .right = right_,                                    \
+            .left = left_,                                      \
+            .rhs = rhs_,                                        \
+            .rhs_unsta = rhs_unsta_,                            \
+            .U = U_,                                            \
+            .next = NULL,                                       \
+        };                                                      \
+        meth.next = func_list;                                  \
+        func_list = &meth;                                      \
+        ++ func_list_length;                                    \
     }
 
-#endif // PROJCHP_FUNC_H
+void chp_func_specialize_rank(struct chp_func *func, int rank, int group_size);
+struct chp_func *chp_get_func_by_name(char const *name);
+struct chp_func *chp_get_func_by_id(unsigned idx);
+
+#endif // CHP_FUNC_H

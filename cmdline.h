@@ -47,12 +47,16 @@ struct gengetopt_args_info
   int resolution_arg;	/**< @brief nombre de points par bandes horizontales (default='10').  */
   char * resolution_orig;	/**< @brief nombre de points par bandes horizontales original value given at command line.  */
   const char *resolution_help; /**< @brief nombre de points par bandes horizontales help description.  */
-  
+  int recouvr_arg;	/**< @brief nombre de ligne dans le recouvrement (default='1').  */
+  char * recouvr_orig;	/**< @brief nombre de ligne dans le recouvrement original value given at command line.  */
+  const char *recouvr_help; /**< @brief nombre de ligne dans le recouvrement help description.  */
+
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
   unsigned int list_function_given ;	/**< @brief Whether list-function was given.  */
   unsigned int resolution_given ;	/**< @brief Whether resolution was given.  */
+  unsigned int recouvr_given ;	/**< @brief Whether recouvr was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */
@@ -143,7 +147,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure 
+ * Initializes all the fields a cmdline_parser_params structure
  * to their default values
  * @param params the structure to initialize
  */

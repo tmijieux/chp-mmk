@@ -10,3 +10,6 @@ option "list-function" l "list available function" flag off
 
 option "resolution" r "nombre de points par bandes horizontales"
        int optional default="10"
+
+option "recouvr" R "nombre de ligne dans le recouvrement"
+       int optional default="1"

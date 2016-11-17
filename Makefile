@@ -22,7 +22,8 @@ SRC=    cmdline.c \
 	perf/perf.c \
 	util.c \
 	grad.c \
-	func.c
+	func.c \
+	equation.c 
 
 SRC_test_driver = \
 	test_driver.c \

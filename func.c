@@ -5,30 +5,28 @@
 #include "util.h"
 #include "func.h"
 
-unsigned method_list_length = 0;
-struct projchp_method *method_list = NULL;
+unsigned func_list_length = 0;
+struct chp_func *func_list = NULL;
 
-static void
-zero(int const N, double const *A, double *B, double param)
+void
+zero(int const N, double const *A, double *B, double v)
 {
     (void) A;
-    (void) param;
-    memset(B, 0, 2*N*sizeof B[0]);
+    (void) v;
+    memset(B, 0, N*sizeof B[0]);
 }
 
 static void
-one(int const N, double const *A, double *B, double param)
+one(int const N, double const *A, double *B, double v)
 {
     (void) A;
-    (void) param;
-    for (int i = 0; i < 2*N; ++i)
-        B[i] = 1;
+    (void) v;
+    for (int i = 0; i < N; ++i)
+        B[i] = 1.0;
 }
 
 static void
-f1(int const Nx, int const Ny,
-   double const *X, double const *Y,
-   double *F)
+rhs_1(int const Nx, int const Ny, double const *X, double const *Y, double *F)
 {
     for (int j = 0; j < Ny; ++j) {
         double yy = Y[j] - SQUARE(Y[j]);
@@ -38,8 +36,7 @@ f1(int const Nx, int const Ny,
 }
 
 static void
-mU1(int const Nx, int const Ny,
-    double const *X, double const *Y,
+U_1(int const Nx, int const Ny, double const *X, double const *Y,
     double const Lx, double const Ly, double *U)
 {
     for (int j = 0; j < Ny; ++j) {
@@ -49,44 +46,36 @@ mU1(int const Nx, int const Ny,
     }
 }
 
+/*bottom OR top*/
 static void
-g2(int const Nx, double const *X, double *G, double Lx_min, double Ly)
+bottom_top_2(int const Nx, double const *X, double *G, double value)
 {
-    double c = cos(Lx_min);
+    double const c1 = cos(value);
     for (int i = 0; i < Nx; ++i)
-        G[i] = sin(X[i]) + c;
+        G[i] = sin(X[i]) + c1;
+}
 
-    c = cos(Ly);
-    for (int i = 0; i < Nx; ++i)
-        G[Nx+i] = sin(X[i]) + c;
+/*right OR left*/
+static void
+right_left_2(int const Ny, double const *Y, double *G, double value)
+{
+    double const s1 = sin(value);
+    for (int i = 0; i < Ny; ++i)
+        G[i] = cos(Y[i]) + s1;
 }
 
 static void
-h2(int const Ny, double const *Y, double *G, double Lx_min, double Lx_max)
-{
-    double s = sin(Lx_min);
-    for (int i = 0; i < Ny; ++i)
-        G[i] = cos(Y[i]) + s;
-
-    double c = sin(Lx_max);
-    for (int i = 0; i < Ny; ++i)
-        G[Ny+i] = cos(Y[i]) + c;
-}
-
-static void f2(int const Nx, int const Ny,
-               double const *X, double const *Y,
-               double *F)
+rhs_2(int const Nx, int const Ny, double const *X, double const *Y, double *F)
 {
     for (int j = 0; j < Ny; ++j) {
-        double s = cos(Y[j]);
+        double const s = cos(Y[j]);
         for (int i = 0; i < Nx; ++i)
             F[Nx*j+i] = sin(X[i]) + s;
     }
 }
 
 static void
-mU2(int const Nx, int const Ny,
-    double const *X, double const *Y,
+U_2(int const Nx, int const Ny, double const *X, double const *Y,
     double const Lx, double const Ly, double *U)
 {
     (void) Lx;
@@ -100,9 +89,8 @@ mU2(int const Nx, int const Ny,
 }
 
 static void
-f3(int const Nx, int const Ny,
-   double const *X, double const *Y,
-   double *F, double Lx, double Ly, double t)
+rhs_3(int const Nx, int const Ny, double const *X, double const *Y,
+      double *F, double Lx, double Ly, double t)
 {
     double c = cos(M_PI*t/2.0);
 
@@ -115,12 +103,55 @@ f3(int const Nx, int const Ny,
 
 REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
                   UNSTATIONARY,
-                  zero, one, NULL, f3, NULL);
+                  zero, zero,
+                  one, one,
+                  NULL, rhs_3, NULL);
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),
                   STATIONARY,
-                  g2, h2, f2, NULL, mU2);
+                  right_left_2, right_left_2,
+                  bottom_top_2, bottom_top_2,
+                  rhs_2, NULL, U_2);
 
 REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),
                   STATIONARY,
-                  zero, zero, f1, NULL, mU1);
+                  zero, zero,
+                  zero, zero,
+                  rhs_1, NULL, U_1);
+
+
+void
+chp_func_specialize_rank(struct chp_func *func, int rank, int group_size)
+{
+    if (rank > 0)
+        func->left = zero;
+    
+    if (rank < group_size-1)
+        func->right = zero;
+}
+
+struct chp_func *
+chp_get_func_by_name(char const *name)
+{
+    struct chp_func *l = func_list;
+    while (l != NULL) {
+        if (!strcmp(l->name, name))
+            return l;
+        l = l->next;
+    }
+    return NULL;
+}
+
+struct chp_func*
+chp_get_func_by_id(unsigned idx)
+{
+    if (idx >= func_list_length) {
+        fprintf(stderr, "No such func!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    struct chp_func *l = func_list;
+    while (idx--)
+        l = l->next;
+    return l;
+}

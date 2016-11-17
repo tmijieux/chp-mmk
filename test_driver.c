@@ -25,7 +25,6 @@ test_vector_compute_RHS(void)
     tdp_vector_one(2*Ny, 1.0, h);
 
     vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, A);
-
     tdp_vector_print(100, A, stdout);
 }
 
