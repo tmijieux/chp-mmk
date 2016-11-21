@@ -125,7 +125,7 @@ chp_func_specialize_rank(struct chp_func *func, int rank, int group_size)
 {
     if (rank > 0)
         func->left = zero;
-    
+
     if (rank < group_size-1)
         func->right = zero;
 }

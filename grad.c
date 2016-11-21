@@ -4,6 +4,7 @@
 #include "cblas.h"
 #include "util.h"
 #include "grad.h"
+#include "equation.h"
 
 #define MAX_NB_ITER 20000
 #define EPSILON   1e-5
@@ -34,7 +35,7 @@ void matrix_5diag_jacobi(
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
 
     for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
-        
+
         SWAP_POINTER(X0, X);
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -191,13 +192,12 @@ void matrix_5diag_sym_product(
  * (first half is left, second half is right)
  *
  */
-void vector_compute_RHS(int const Nx, int const Ny,
-                        double const Cx, double const Cy,
-                        double const *h, double const *g,
-                        double */*inout*/RHS)
-{
-    cblas_daxpy(Nx, -Cy, g, 1, RHS, 1);
-    cblas_daxpy(Ny, -Cx, h, 1, RHS, Nx);
-    cblas_daxpy(Ny, -Cx, h+Ny, 1, RHS+Nx-1, Nx);
-    cblas_daxpy(Nx, -Cy, g+Nx, 1, RHS+Ny*(Nx-1), 1);
+void vector_compute_RHS(struct chp_equation *eq)
+ {
+    int Nx = eq->Nx, Ny = eq->Ny;
+    
+    cblas_daxpy(Nx, -eq->Cy, eq->bottom, 1, eq->rhs, 1);
+    cblas_daxpy(Ny, -eq->Cx, eq->left, 1, eq->rhs, Nx);
+    cblas_daxpy(Ny, -eq->Cx, eq->right, 1, eq->rhs+Nx-1, Nx);
+    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Ny*(Nx-1), 1);
 }

@@ -13,19 +13,28 @@
 static void
 test_vector_compute_RHS(void)
 {
-    double *A = tdp_vector_new(100);
     int const Nx = 10;
     int const Ny = 10;
     double Cx = 0.1, Cy = 0.1;
 
-    double *g = tdp_vector_new(2*Nx);
-    double *h = tdp_vector_new(2*Ny);
+    struct chp_equation eq;
+    eq.rhs = tdp_vector_new(Nx*Ny);
+    eq.right = tdp_vector_new(Ny);
+    eq.left = tdp_vector_new(Ny);
+    eq.bottom = tdp_vector_new(Nx);
+    eq.top = tdp_vector_new(Nx);
 
-    tdp_vector_one(2*Nx, 3.0, g);
-    tdp_vector_one(2*Ny, 1.0, h);
+    tdp_vector_one(Nx, 3.0, eq.bottom);
+    tdp_vector_one(Nx, 3.0, eq.top);
+    tdp_vector_one(Ny, 1.0, eq.right);
+    tdp_vector_one(Ny, 1.0, eq.left);
+    
+    eq.Nx = Nx; eq.Ny = Ny;
+    eq.Cx = Cx; eq.Cy = Cy;
+    
 
-    vector_compute_RHS(Nx, Ny, Cx, Cy, h, g, A);
-    tdp_vector_print(100, A, stdout);
+    vector_compute_RHS(&eq);
+    tdp_vector_print(100, eq.rhs, stdout);
 }
 
 static void

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <mpi.h>
 #include <math.h>
@@ -15,43 +16,43 @@
 #include "grad.h"
 #include "cblas.h"
 #include "proc.h"
+ 
+/* static void */
+/* create_directory(char const *dirname) */
+/* { */
+/*     mkdir(dirname, S_IRWXU); */
+/* } */
 
-static void
-create_directory(char const *dirname)
-{
-    mkdir(dirname, S_IRWXU);
-}
+/* static void */
+/* chp_output(char const *filename, int const Nx, int const Ny, */
+/*            double const *X, double const *Y, double const *U) */
+/* { */
+/*     FILE *f = fopen(filename, "w"); */
+/*     if (f == NULL) { */
+/*         perror(filename); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
 
-static void
-chp_output(char const *filename, int const Nx, int const Ny,
-           double const *X, double const *Y, double const *U)
-{
-    FILE *f = fopen(filename, "w");
-    if (f == NULL) {
-        perror(filename);
-        exit(EXIT_FAILURE);
-    }
+/*     for (int i = 0; i < Nx; ++i) { */
+/*         for (int j = 0; j < Ny; ++j) */
+/*             fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]); */
+/*         fprintf(f, "\n"); */
+/*     } */
+/*     fclose(f); */
+/* } */
 
-    for (int i = 0; i < Nx; ++i) {
-        for (int j = 0; j < Ny; ++j)
-            fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]);
-        fprintf(f, "\n");
-    }
-    fclose(f);
-}
-
-static void
-read_param(char const *filename, int *Nx, int *Ny,
-           double *Lx, double *Ly, double *D)
-{
-    FILE *f = fopen(filename, "r");
-    if (f == NULL) {
-        perror(filename);
-        exit(EXIT_FAILURE);
-    }
-    fscanf(f, "%d %d %lg %lg %lg", Nx, Ny, Lx, Ly, D);
-    fclose(f);
-}
+/* static void */
+/* read_param(char const *filename, int *Nx, int *Ny, */
+/*            double *Lx, double *Ly, double *D) */
+/* { */
+/*     FILE *f = fopen(filename, "r"); */
+/*     if (f == NULL) { */
+/*         perror(filename); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
+/*     fscanf(f, "%d %d %lg %lg %lg", Nx, Ny, Lx, Ly, D); */
+/*     fclose(f); */
+/* } */
 
 static void
 handle_opt(struct gengetopt_args_info *opt)
@@ -69,19 +70,24 @@ handle_opt(struct gengetopt_args_info *opt)
     }
 }
 
-
 static void
 chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
 {
+    int rank = p->rank, group_size = p->group_size;
+    int Nx = eq->Nx, Ny = eq->Ny;
+    MPI_Status st;
     
-    /* if (p->rank < p->group_size - 1) { */
-    /*     MPI_Send(eq->U, Ny, MPI_DOUBLE, p->rank+1, 0, MPI_COMM_WORLD); */
-    /*     MPI_Recv(eq->U, Ny, MPI_DOUBLE, p->rank+1, 0, MPI_COMM_WORLD); */
-    /* } */
-    /* if (p->rank > 0) { */
-    /*     MPI_Recv(eq->U, Ny, MPI_DOUBLE, p->rank-1, 0, MPI_COMM_WORLD); */
-    /*     MPI_Send(eq->U, Ny, MPI_DOUBLE, p->rank-1, 0, MPI_COMM_WORLD); */
-    /* } */
+    if (rank < group_size-1)
+        MPI_Bsend(eq->U0 + (eq->next_border_col * Nx),
+                  Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD);
+    if (rank > 0)
+        MPI_Bsend(eq->U0 + (eq->prev_border_col * Nx),
+                  Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD);
+
+    if (rank < group_size-1)
+        MPI_Recv(eq->right, Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD, &st);
+    if (rank > 0)
+        MPI_Recv(eq->left, Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD, &st);
 }
 
 /*stationary*/
@@ -94,27 +100,36 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
     struct chp_equation eq;
     struct chp_func *func;
 
-    chp_equation_init(&eq, p->rank, p->group_size, r, s);
+    chp_equation_init(&eq, p->rank, p->group_size, r, s, s);
     chp_equation_alloc(&eq);
+
     func = chp_get_func_by_id(opt->function_arg);
     chp_func_specialize_rank(func, p->rank, p->group_size);
-
     chp_equation_grid_init(&eq);
     chp_equation_border_init(p, &eq, func);
 
     if (p->rank == 1) {
         printf("Nx=%d; Ny=%d\n", eq.Nx, eq.Ny);
+        printf("-1=%g\n", eq.X[0]-eq.dx);
         tdp_vector_print(eq.Nx, eq.X, stdout);
+        printf("+1=%g\n", eq.X[eq.Nx-1]+eq.dx);
+        printf("prev_x: %g :: next_x: %g\n",
+               eq.prev_border_x, eq.next_border_x);
+        printf("prev_col: %d :: next_col: %d\n",
+               eq.prev_border_col, eq.next_border_col);
         printf("\n\n");
-        //tdp_vector_print(eq.Ny, eq.Y, stdout);
-    }        
+    }
 
-    #define NOT_CONVERGED 0
-    while ( NOT_CONVERGED) {
+    while (true) {
+        vector_compute_RHS(&eq);
+        
         matrix_5diag_conjugate_gradient(
             eq.Nx, eq.Ny, eq.B, eq.Cx, eq.Cy, eq.rhs, eq.U0);
         chp_mpi_transfer_border_data(p, &eq);
+        // if (stop_condition)
+        //    break;
     }
+    chp_equation_free(&eq);
 }
 
 int main(int argc, char *argv[])

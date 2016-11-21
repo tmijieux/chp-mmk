@@ -1,6 +1,8 @@
 #ifndef PROJCHP_GRAD_H
 #define PROJCHP_GRAD_H
 
+#include "equation.h"
+
 void matrix_5diag_jacobi(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
@@ -21,9 +23,6 @@ void matrix_5diag_sym_product(
     double const B, double const Cx, double const Cy,
     double const *X, double *AX);
 
-void vector_compute_RHS(int const Nx, int const Ny,
-                        double const Cx, double const Cy,
-                        double const *h, double const *g,
-                        double */*inout*/RHS);
+void vector_compute_RHS(struct chp_equation *eq);
 
 #endif // PROJCHP_GRAD_H

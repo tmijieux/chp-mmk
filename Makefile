@@ -5,9 +5,9 @@ GENGETOPT=gengetopt
 CC=mpicc
 
 
-
 ifdef DEBUG
-CFLAGS+=-ggdb -O0 -DDEBUG=1
+CFLAGS+=-ggdb -O0 -DDEBUG=1 -fsanitize=address -fsanitize=undefined
+LDFLAGS+=-g -fsanitize=address -fsanitize=undefined
 else
 CFLAGS+=-O3 -march=native -fopenmp
 endif
