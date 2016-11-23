@@ -73,19 +73,28 @@ handle_opt(struct gengetopt_args_info *opt)
     }
 }
 
+MPI_Datatype column_type;
+
+static void
+chp_mpi_init_type(struct chp_equation *eq)
+{
+    MPI_Type_vector(eq->Ny, 1, eq->Nx, MPI_DOUBLE, &column_type);
+    MPI_Type_commit(&column_type);
+}
+
 static void
 chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
 {
     int rank = p->rank, group_size = p->group_size;
-    int Nx = eq->Nx, Ny = eq->Ny;
+    int Ny = eq->Ny;
     MPI_Status st;
 
     if (rank < group_size-1)
-        MPI_Bsend(eq->U1 + (eq->next_border_col * Nx),
-                  Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD);
+        MPI_Bsend(eq->U1 + eq->next_border_col,
+                  1, column_type, p->rank+1, rank, MPI_COMM_WORLD);
     if (rank > 0)
-        MPI_Bsend(eq->U1 + (eq->prev_border_col * Nx),
-                  Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD);
+        MPI_Bsend(eq->U1 + eq->prev_border_col,
+                  1, column_type, p->rank-1, rank-1, MPI_COMM_WORLD);
 
     if (rank < group_size-1)
         MPI_Recv(eq->right, Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD, &st);
@@ -118,6 +127,33 @@ static bool chp_stop_condition(struct chp_equation *eq, int step)
     return false;
 }
 
+
+void print_debug_info_1(struct chp_proc *p, struct chp_equation *eq)
+{
+     if (p->rank == 1) {
+        printf("Nx=%d; Ny=%d\n", eq->Nx, eq->Ny);
+        printf("-1=%g\n", eq->X[0]-eq->dx);
+        tdp_vector_print(eq->Nx, eq->X, stdout);
+        printf("+1=%g\n", eq->X[eq->Nx-1]+eq->dx);
+        printf("prev_x: %g :: next_x: %g\n",
+               eq->prev_border_x, eq->next_border_x);
+        printf("prev_col: %d :: next_col: %d\n",
+               eq->prev_border_col, eq->next_border_col);
+        printf("\n\n");
+    }
+}
+
+void print_debug_info_2(struct chp_proc *p, struct chp_equation *eq, int step)
+{
+     if (p->rank == 1) {
+         printf("left step %d:\n", step);
+         tdp_vector_print(eq->Ny, eq->left, stdout);
+
+         printf("right step %d:\n", step);
+         tdp_vector_print(eq->Ny, eq->right, stdout);
+     }
+}
+
 /*stationary*/
 static void
 solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
@@ -130,24 +166,13 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
 
     chp_equation_init(&eq, p->rank, p->group_size, r, s, s,
                       opt->Lx_arg, opt->Ly_arg);
+    chp_mpi_init_type(&eq);
     chp_equation_alloc(&eq);
 
     func = chp_get_func_by_id(opt->function_arg);
     chp_func_specialize_rank(func, p->rank, p->group_size);
     chp_equation_grid_init(&eq);
     chp_equation_border_init(p, &eq, func);
-
-    /* if (p->rank == 1) { */
-    /*     printf("Nx=%d; Ny=%d\n", eq.Nx, eq.Ny); */
-    /*     printf("-1=%g\n", eq.X[0]-eq.dx); */
-    /*     tdp_vector_print(eq.Nx, eq.X, stdout); */
-    /*     printf("+1=%g\n", eq.X[eq.Nx-1]+eq.dx); */
-    /*     printf("prev_x: %g :: next_x: %g\n", */
-    /*            eq.prev_border_x, eq.next_border_x); */
-    /*     printf("prev_col: %d :: next_col: %d\n", */
-    /*            eq.prev_border_col, eq.next_border_col); */
-    /*     printf("\n\n"); */
-    /* } */
 
     bool quit = false;
     int step = 0;
@@ -156,6 +181,8 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
         vector_compute_RHS(&eq);
         matrix_5diag_conjugate_gradient(
             eq.Nx, eq.Ny, eq.B, eq.Cx, eq.Cy, eq.rhs, eq.U1);
+
+        //print_debug_info_2(p, &eq, step);
         chp_mpi_transfer_border_data(p, &eq);
         quit = chp_stop_condition(&eq, step);
         ++ step;
