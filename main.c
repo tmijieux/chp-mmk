@@ -16,30 +16,31 @@
 #include "grad.h"
 #include "cblas.h"
 #include "proc.h"
- 
+
+
 /* static void */
 /* create_directory(char const *dirname) */
 /* { */
 /*     mkdir(dirname, S_IRWXU); */
 /* } */
 
-/* static void */
-/* chp_output(char const *filename, int const Nx, int const Ny, */
-/*            double const *X, double const *Y, double const *U) */
-/* { */
-/*     FILE *f = fopen(filename, "w"); */
-/*     if (f == NULL) { */
-/*         perror(filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
+static void
+chp_output(char const *filename, int const Nx, int const Ny,
+           double const *X, double const *Y, double const *U)
+{
+    FILE *f = fopen(filename, "w");
+    if (f == NULL) {
+        perror(filename);
+        exit(EXIT_FAILURE);
+    }
 
-/*     for (int i = 0; i < Nx; ++i) { */
-/*         for (int j = 0; j < Ny; ++j) */
-/*             fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]); */
-/*         fprintf(f, "\n"); */
-/*     } */
-/*     fclose(f); */
-/* } */
+    for (int i = 0; i < Nx; ++i) {
+        for (int j = 0; j < Ny; ++j)
+            fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]);
+        fprintf(f, "\n");
+    }
+    fclose(f);
+}
 
 /* static void */
 /* read_param(char const *filename, int *Nx, int *Ny, */
@@ -76,7 +77,7 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
     int rank = p->rank, group_size = p->group_size;
     int Nx = eq->Nx, Ny = eq->Ny;
     MPI_Status st;
-    
+
     if (rank < group_size-1)
         MPI_Bsend(eq->U0 + (eq->next_border_col * Nx),
                   Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD);
@@ -90,6 +91,31 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
         MPI_Recv(eq->left, Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD, &st);
 }
 
+static bool chp_stop_condition(struct chp_equation *eq, int step)
+{
+    int N = eq->Nx*eq->Ny;
+    if (step == 0) {
+        SWAP_POINTER(eq->U1, eq->U0);
+        return false;
+    }
+
+    cblas_daxpy(N, -1, eq->U1, 1, eq->U0, 1);
+    double n = cblas_dnrm2(N, eq->U0, 1);
+    double b = cblas_dnrm2(N, eq->U1, 1);
+
+    SWAP_POINTER(eq->U1, eq->U0);
+
+    double v = n/b;
+    double max;
+    MPI_Allreduce(&v, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+    if (max < EPSILON) {
+        SWAP_POINTER(eq->U1, eq->U0);
+        return true;
+    }
+    return false;
+}
+
 /*stationary*/
 static void
 solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
@@ -100,7 +126,8 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
     struct chp_equation eq;
     struct chp_func *func;
 
-    chp_equation_init(&eq, p->rank, p->group_size, r, s, s);
+    chp_equation_init(&eq, p->rank, p->group_size, r, s, s,
+                      opt->Lx_arg, opt->Ly_arg);
     chp_equation_alloc(&eq);
 
     func = chp_get_func_by_id(opt->function_arg);
@@ -120,15 +147,19 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
         printf("\n\n");
     }
 
-    while (true) {
+    bool quit = false;
+    int step = 0;
+    while (!quit) {
+        cblas_dcopy(eq.N, eq.rhs_f, 1, eq.rhs, 1);
         vector_compute_RHS(&eq);
-        
         matrix_5diag_conjugate_gradient(
-            eq.Nx, eq.Ny, eq.B, eq.Cx, eq.Cy, eq.rhs, eq.U0);
+            eq.Nx, eq.Ny, eq.B, eq.Cx, eq.Cy, eq.rhs, eq.U1);
         chp_mpi_transfer_border_data(p, &eq);
-        // if (stop_condition)
-        //    break;
+        quit = chp_stop_condition(&eq, step);
+        ++ step;
     }
+
+    chp_output("numeric.dat", eq.Nx, eq.Ny, eq.X, eq.Y, eq.U1);
     chp_equation_free(&eq);
 }
 

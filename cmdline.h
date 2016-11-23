@@ -50,6 +50,12 @@ struct gengetopt_args_info
   int recouvr_arg;	/**< @brief nombre de ligne dans le recouvrement (default='1').  */
   char * recouvr_orig;	/**< @brief nombre de ligne dans le recouvrement original value given at command line.  */
   const char *recouvr_help; /**< @brief nombre de ligne dans le recouvrement help description.  */
+  double Lx_arg;	/**< @brief x = [0, Lx] (default='1.0').  */
+  char * Lx_orig;	/**< @brief x = [0, Lx] original value given at command line.  */
+  const char *Lx_help; /**< @brief x = [0, Lx] help description.  */
+  double Ly_arg;	/**< @brief y = [0, Ly] (default='1.0').  */
+  char * Ly_orig;	/**< @brief y = [0, Ly] original value given at command line.  */
+  const char *Ly_help; /**< @brief y = [0, Ly] help description.  */
 
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -57,6 +63,8 @@ struct gengetopt_args_info
   unsigned int list_function_given ;	/**< @brief Whether list-function was given.  */
   unsigned int resolution_given ;	/**< @brief Whether resolution was given.  */
   unsigned int recouvr_given ;	/**< @brief Whether recouvr was given.  */
+  unsigned int Lx_given ;	/**< @brief Whether Lx was given.  */
+  unsigned int Ly_given ;	/**< @brief Whether Ly was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */

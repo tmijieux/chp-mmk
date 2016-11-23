@@ -40,12 +40,15 @@ const char *gengetopt_args_info_help[] = {
   "  -l, --list-function   list available function  (default=off)",
   "  -r, --resolution=INT  nombre de points par bandes horizontales\n                          (default=`10')",
   "  -R, --recouvr=INT     nombre de ligne dans le recouvrement  (default=`1')",
+  "  -x, --Lx=DOUBLE       x = [0, Lx]  (default=`1.0')",
+  "  -y, --Ly=DOUBLE       y = [0, Ly]  (default=`1.0')",
     0
 };
 
 typedef enum {ARG_NO
   , ARG_FLAG
   , ARG_INT
+  , ARG_DOUBLE
 } cmdline_parser_arg_type;
 
 static
@@ -70,6 +73,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->list_function_given = 0 ;
   args_info->resolution_given = 0 ;
   args_info->recouvr_given = 0 ;
+  args_info->Lx_given = 0 ;
+  args_info->Ly_given = 0 ;
 }
 
 static
@@ -83,6 +88,10 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->resolution_orig = NULL;
   args_info->recouvr_arg = 1;
   args_info->recouvr_orig = NULL;
+  args_info->Lx_arg = 1.0;
+  args_info->Lx_orig = NULL;
+  args_info->Ly_arg = 1.0;
+  args_info->Ly_orig = NULL;
 
 }
 
@@ -97,6 +106,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->list_function_help = gengetopt_args_info_help[3] ;
   args_info->resolution_help = gengetopt_args_info_help[4] ;
   args_info->recouvr_help = gengetopt_args_info_help[5] ;
+  args_info->Lx_help = gengetopt_args_info_help[6] ;
+  args_info->Ly_help = gengetopt_args_info_help[7] ;
 
 }
 
@@ -186,6 +197,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->function_orig));
   free_string_field (&(args_info->resolution_orig));
   free_string_field (&(args_info->recouvr_orig));
+  free_string_field (&(args_info->Lx_orig));
+  free_string_field (&(args_info->Ly_orig));
 
 
   for (i = 0; i < args_info->inputs_num; ++i)
@@ -233,6 +246,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "resolution", args_info->resolution_orig, 0);
   if (args_info->recouvr_given)
     write_into_file(outfile, "recouvr", args_info->recouvr_orig, 0);
+  if (args_info->Lx_given)
+    write_into_file(outfile, "Lx", args_info->Lx_orig, 0);
+  if (args_info->Ly_given)
+    write_into_file(outfile, "Ly", args_info->Ly_orig, 0);
 
 
   i = EXIT_SUCCESS;
@@ -404,6 +421,9 @@ int update_arg(void *field, char **orig_field,
   case ARG_INT:
     if (val) *((int *)field) = strtol (val, &stop_char, 0);
     break;
+  case ARG_DOUBLE:
+    if (val) *((double *)field) = strtod (val, &stop_char);
+    break;
   default:
     break;
   };
@@ -411,6 +431,7 @@ int update_arg(void *field, char **orig_field,
   /* check numeric conversion */
   switch(arg_type) {
   case ARG_INT:
+  case ARG_DOUBLE:
     if (val && !(stop_char && *stop_char == '\0')) {
       fprintf(stderr, "%s: invalid numeric value: %s\n", package_name, val);
       return 1; /* failure */
@@ -484,10 +505,12 @@ cmdline_parser_internal (
         { "list-function",	0, NULL, 'l' },
         { "resolution",	1, NULL, 'r' },
         { "recouvr",	1, NULL, 'R' },
+        { "Lx",	1, NULL, 'x' },
+        { "Ly",	1, NULL, 'y' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVf:lr:R:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVf:lr:R:x:y:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -545,6 +568,30 @@ cmdline_parser_internal (
               &(local_args_info.recouvr_given), optarg, 0, "1", ARG_INT,
               check_ambiguity, override, 0, 0,
               "recouvr", 'R',
+              additional_error))
+            goto failure;
+
+          break;
+        case 'x':	/* x = [0, Lx].  */
+
+
+          if (update_arg( (void *)&(args_info->Lx_arg),
+               &(args_info->Lx_orig), &(args_info->Lx_given),
+              &(local_args_info.Lx_given), optarg, 0, "1.0", ARG_DOUBLE,
+              check_ambiguity, override, 0, 0,
+              "Lx", 'x',
+              additional_error))
+            goto failure;
+
+          break;
+        case 'y':	/* y = [0, Ly].  */
+
+
+          if (update_arg( (void *)&(args_info->Ly_arg),
+               &(args_info->Ly_orig), &(args_info->Ly_given),
+              &(local_args_info.Ly_given), optarg, 0, "1.0", ARG_DOUBLE,
+              check_ambiguity, override, 0, 0,
+              "Ly", 'y',
               additional_error))
             goto failure;
 

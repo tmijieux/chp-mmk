@@ -31,17 +31,18 @@ void chp_equation_grid_init(struct chp_equation *eq)
 
 void chp_equation_init(
     struct chp_equation *eq, int rank, int group_size,
-    int recouvr, int NNX, int NNY)
+    int recouvr, int NNX, int NNY, double Lx, double Ly)
 {
     int Nx = NNX / group_size;
     int Ny = NNY;
     if (rank < (NNX%group_size))
         ++ Nx;
 
-    double recouvrD = ((double)recouvr/NNX);
-    double Lx_min = max(0.0, ((double)rank / group_size) - recouvrD/2.0);
-    double Lx_max = min(1.0, ((double)(rank+1) / group_size) + recouvrD/2.0);
-    double Ly_min = 0.0, Ly_max = 1.0;
+
+    double recouvrD = ((double)recouvr/NNX)*Lx;
+    double Lx_min = max(0.0, ((double)rank / group_size)*Lx - recouvrD/2.0);
+    double Lx_max = min(Lx, ((double)(rank+1) / group_size)*Lx + recouvrD/2.0);
+    double Ly_min = 0.0, Ly_max = Ly;
 
     if (rank > 0)
         eq->prev_border_x = Lx_min + recouvrD;
@@ -50,7 +51,7 @@ void chp_equation_init(
 
     //printf("r=%d :: Nx=%d :: [%g, %g]\n", rank, Nx, Lx_min, Lx_max);
     double dx = (Lx_max-Lx_min) / (Nx+1);
-    double dy = 1.0 / (Ny+1);
+    double dy = (Ly_max-Ly_min) / (Ny+1);
 
     double D = 1.0;
     double B = 2 * D / SQUARE(dx) + 2 * D / SQUARE(dy);
@@ -58,6 +59,7 @@ void chp_equation_init(
     double Cy = -D / SQUARE(dy);
 
     eq->Nx = Nx; eq->Ny = Ny;
+    eq->N = Nx*Ny;
     eq->Lx_min = Lx_min; eq->Lx_max = Lx_max;
     eq->Ly_min = Ly_min; eq->Ly_max = Ly_max;
     eq->dx = dx; eq->dy = dy;
@@ -79,6 +81,7 @@ void chp_equation_alloc(struct chp_equation *eq)
     //eq->Y = NULL;
 
     eq->rhs = tdp_vector_new(N);
+    eq->rhs_f = tdp_vector_new(N);
     eq->U0 = tdp_vector_new(N);
     eq->U1 = tdp_vector_new(N);
 }
@@ -105,9 +108,9 @@ void chp_equation_border_init(
     double *X = eq->X, *Y = eq->Y;
 
     if (func->type == CHP_STATIONARY)
-        func->rhs(Nx, Ny, X, Y, eq->rhs);
+        func->rhs(Nx, Ny, X, Y, eq->rhs_f);
     else
-        func->rhs_unsta(Nx, Ny, X, Y, eq->rhs, 1.0, 1.0, 0.0);
+        func->rhs_unsta(Nx, Ny, X, Y, eq->rhs_f, 1.0, 1.0, 0.0);
 
     func->bottom(Nx, X, eq->bottom, eq->Ly_min);
     func->top(Nx, X, eq->top, eq->Ly_max);

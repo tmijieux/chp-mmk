@@ -3,6 +3,16 @@
 
 #include "equation.h"
 
+
+#define EPSILON   1e-5
+#define SWAP_POINTER(p1, p2)                     \
+    do {                                        \
+        void *tmp_MAXCRO__ = p1;                \
+        p1 = p2;                                \
+        p2 = tmp_MAXCRO__;                      \
+    } while(0)                                  \
+
+
 void matrix_5diag_jacobi(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,

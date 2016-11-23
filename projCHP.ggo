@@ -13,3 +13,9 @@ option "resolution" r "nombre de points par bandes horizontales"
 
 option "recouvr" R "nombre de ligne dans le recouvrement"
        int optional default="1"
+
+option "Lx" x "x = [0, Lx]"
+       double optional default="1.0"
+
+option "Ly" y "y = [0, Ly]"
+       double optional default="1.0"

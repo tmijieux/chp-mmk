@@ -12,12 +12,6 @@
 #define PASTE2_(x,y) x##y
 #define PASTE2(x,y) PASTE2_(x, y)
 
-#define SWAP_POINTER(p1, p2)                     \
-    do {                                        \
-        void *tmp_MAXCRO__ = p1;                \
-        p1 = p2;                                \
-        p2 = tmp_MAXCRO__;                      \
-    } while(0)                                  \
 
 void matrix_5diag_jacobi(
     int const Nx, int const Ny,
@@ -195,9 +189,10 @@ void matrix_5diag_sym_product(
 void vector_compute_RHS(struct chp_equation *eq)
  {
     int Nx = eq->Nx, Ny = eq->Ny;
-    
+
     cblas_daxpy(Nx, -eq->Cy, eq->bottom, 1, eq->rhs, 1);
+    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Ny*(Nx-1), 1);
+
     cblas_daxpy(Ny, -eq->Cx, eq->left, 1, eq->rhs, Nx);
     cblas_daxpy(Ny, -eq->Cx, eq->right, 1, eq->rhs+Nx-1, Nx);
-    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Ny*(Nx-1), 1);
 }

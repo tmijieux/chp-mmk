@@ -12,10 +12,11 @@ struct chp_equation {
     double dx, dy;
     double D, B, Cx, Cy;
     int Nx, Ny;
+    int N;
 
     double *X, *Y;
     double *top, *bottom, *left, *right;
-    double *rhs;
+    double *rhs, *rhs_f;
 
     double *U0, *U1;
 
@@ -25,7 +26,8 @@ struct chp_equation {
 
 void chp_equation_grid_init(struct chp_equation *eq);
 void chp_equation_init(struct chp_equation *eq,
-                       int rank, int group_size, int recouvr, int NNX, int NNY);
+                       int rank, int group_size, int recouvr,
+                       int NNX, int NNY, double Lx, double Ly);
 void chp_equation_border_init(struct chp_proc *proc,
                               struct chp_equation *eq, struct chp_func *func);
 void chp_equation_alloc(struct chp_equation *eq);

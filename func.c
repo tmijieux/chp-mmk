@@ -109,8 +109,8 @@ REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),
                   STATIONARY,
-                  right_left_2, right_left_2,
                   bottom_top_2, bottom_top_2,
+                  right_left_2, right_left_2,
                   rhs_2, NULL, U_2);
 
 REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),

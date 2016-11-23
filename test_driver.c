@@ -28,10 +28,10 @@ test_vector_compute_RHS(void)
     tdp_vector_one(Nx, 3.0, eq.top);
     tdp_vector_one(Ny, 1.0, eq.right);
     tdp_vector_one(Ny, 1.0, eq.left);
-    
+
     eq.Nx = Nx; eq.Ny = Ny;
     eq.Cx = Cx; eq.Cy = Cy;
-    
+
 
     vector_compute_RHS(&eq);
     tdp_vector_print(100, eq.rhs, stdout);

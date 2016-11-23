@@ -6,5 +6,4 @@ struct chp_proc {
     int group_size;
 };
 
-
 #endif // CHP_PROC_H
