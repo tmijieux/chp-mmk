@@ -114,6 +114,7 @@ void chp_equation_border_init(
 
     func->bottom(Nx, X, eq->bottom, eq->Ly_min);
     func->top(Nx, X, eq->top, eq->Ly_max);
+
     func->left(Ny, Y, eq->left, eq->Lx_min);
     func->right(Ny, Y, eq->right, eq->Lx_max);
     //func->U(Nx, Ny, X, Y, Lx_min, Lx_max, Ly, Uexact);

@@ -191,7 +191,7 @@ void vector_compute_RHS(struct chp_equation *eq)
     int Nx = eq->Nx, Ny = eq->Ny;
 
     cblas_daxpy(Nx, -eq->Cy, eq->bottom, 1, eq->rhs, 1);
-    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Ny*(Nx-1), 1);
+    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Nx*(Ny-1), 1);
 
     cblas_daxpy(Ny, -eq->Cx, eq->left, 1, eq->rhs, Nx);
     cblas_daxpy(Ny, -eq->Cx, eq->right, 1, eq->rhs+Nx-1, Nx);
