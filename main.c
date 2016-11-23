@@ -28,18 +28,20 @@ static void
 chp_output(char const *filename, int const Nx, int const Ny,
            double const *X, double const *Y, double const *U)
 {
-    FILE *f = fopen(filename, "w");
+    (void) filename;
+    FILE *f = stdout;
+    /* = fopen(filename, "w");
     if (f == NULL) {
         perror(filename);
         exit(EXIT_FAILURE);
-    }
+        }*/
 
     for (int i = 0; i < Nx; ++i) {
         for (int j = 0; j < Ny; ++j)
             fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]);
         fprintf(f, "\n");
     }
-    fclose(f);
+    //fclose(f);
 }
 
 /* static void */
@@ -79,10 +81,10 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
     MPI_Status st;
 
     if (rank < group_size-1)
-        MPI_Bsend(eq->U0 + (eq->next_border_col * Nx),
+        MPI_Bsend(eq->U1 + (eq->next_border_col * Nx),
                   Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD);
     if (rank > 0)
-        MPI_Bsend(eq->U0 + (eq->prev_border_col * Nx),
+        MPI_Bsend(eq->U1 + (eq->prev_border_col * Nx),
                   Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD);
 
     if (rank < group_size-1)
@@ -135,17 +137,17 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
     chp_equation_grid_init(&eq);
     chp_equation_border_init(p, &eq, func);
 
-    if (p->rank == 1) {
-        printf("Nx=%d; Ny=%d\n", eq.Nx, eq.Ny);
-        printf("-1=%g\n", eq.X[0]-eq.dx);
-        tdp_vector_print(eq.Nx, eq.X, stdout);
-        printf("+1=%g\n", eq.X[eq.Nx-1]+eq.dx);
-        printf("prev_x: %g :: next_x: %g\n",
-               eq.prev_border_x, eq.next_border_x);
-        printf("prev_col: %d :: next_col: %d\n",
-               eq.prev_border_col, eq.next_border_col);
-        printf("\n\n");
-    }
+    /* if (p->rank == 1) { */
+    /*     printf("Nx=%d; Ny=%d\n", eq.Nx, eq.Ny); */
+    /*     printf("-1=%g\n", eq.X[0]-eq.dx); */
+    /*     tdp_vector_print(eq.Nx, eq.X, stdout); */
+    /*     printf("+1=%g\n", eq.X[eq.Nx-1]+eq.dx); */
+    /*     printf("prev_x: %g :: next_x: %g\n", */
+    /*            eq.prev_border_x, eq.next_border_x); */
+    /*     printf("prev_col: %d :: next_col: %d\n", */
+    /*            eq.prev_border_col, eq.next_border_col); */
+    /*     printf("\n\n"); */
+    /* } */
 
     bool quit = false;
     int step = 0;
@@ -158,6 +160,8 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
         quit = chp_stop_condition(&eq, step);
         ++ step;
     }
+    if (!p->rank)
+        printf("#step = %d\n", step);
 
     chp_output("numeric.dat", eq.Nx, eq.Ny, eq.X, eq.Y, eq.U1);
     chp_equation_free(&eq);
@@ -188,7 +192,8 @@ int main(int argc, char *argv[])
     MPI_Reduce(&micro, &max_t, 1, MPI_UNSIGNED_LONG,
                MPI_MAX, 0, MPI_COMM_WORLD);
     if (!P.rank)
-        fprintf(stderr, "time: %lu.%06lu s\n", max_t/1000000UL, max_t%1000000UL);
+        fprintf(stderr, "# %d: %lu.%06lu s\n", opt.resolution_arg,
+                max_t/1000000UL, max_t%1000000UL);
 
     MPI_Finalize();
     return EXIT_SUCCESS;
