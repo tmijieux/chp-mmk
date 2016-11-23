@@ -76,9 +76,9 @@ static void f2(int const Nx, int const Ny,
                double *F)
 {
     for (int j = 0; j < Ny; ++j) {
-        double s = sin(X[j]);
+        double s = cos(Y[j]);
         for (int i = 0; i < Nx; ++i)
-            F[Nx*j+i] = cos(Y[i]) + s;
+            F[Nx*j+i] = sin(X[i]) + s;
     }
 }
 
