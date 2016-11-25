@@ -60,5 +60,5 @@ mrproper: clean
 	$(RM) $(TARGET)
 
 genopt: projCHP.ggo
-	$(GENGETOPT) -u"INPUT FILES" < $^
+	$(GENGETOPT) < $^
 

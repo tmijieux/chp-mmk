@@ -90,10 +90,10 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
     MPI_Status st;
 
     if (rank < group_size-1)
-        MPI_Bsend(eq->U1 + eq->next_border_col,
+        MPI_Send(eq->U1 + eq->next_border_col,
                   1, column_type, p->rank+1, rank, MPI_COMM_WORLD);
     if (rank > 0)
-        MPI_Bsend(eq->U1 + eq->prev_border_col,
+        MPI_Send(eq->U1 + eq->prev_border_col,
                   1, column_type, p->rank-1, rank-1, MPI_COMM_WORLD);
 
     if (rank < group_size-1)
