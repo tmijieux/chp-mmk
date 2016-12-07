@@ -18,30 +18,29 @@
 #include "proc.h"
 
 
-/* static void */
-/* create_directory(char const *dirname) */
-/* { */
-/*     mkdir(dirname, S_IRWXU); */
-/* } */
+static void
+create_directory(char const *dirname)
+{
+    mkdir(dirname, S_IRWXU);
+}
 
 static void
 chp_output(char const *filename, int const Nx, int const Ny,
            double const *X, double const *Y, double const *U)
 {
     (void) filename;
-    FILE *f = stdout;
-    /* = fopen(filename, "w");
+    FILE *f = fopen(filename, "w");
     if (f == NULL) {
         perror(filename);
         exit(EXIT_FAILURE);
-        }*/
+    }
 
     for (int i = 0; i < Nx; ++i) {
         for (int j = 0; j < Ny; ++j)
             fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]);
         fprintf(f, "\n");
     }
-    //fclose(f);
+    fclose(f);
 }
 
 /* static void */
@@ -97,9 +96,11 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
                   1, column_type, p->rank-1, rank-1, MPI_COMM_WORLD);
 
     if (rank < group_size-1)
-        MPI_Recv(eq->right, Ny, MPI_DOUBLE, p->rank+1, rank, MPI_COMM_WORLD, &st);
+        MPI_Recv(eq->right, Ny, MPI_DOUBLE,
+                 p->rank+1, rank, MPI_COMM_WORLD, &st);
     if (rank > 0)
-        MPI_Recv(eq->left, Ny, MPI_DOUBLE, p->rank-1, rank-1, MPI_COMM_WORLD, &st);
+        MPI_Recv(eq->left, Ny, MPI_DOUBLE,
+                 p->rank-1, rank-1, MPI_COMM_WORLD, &st);
 }
 
 static bool chp_stop_condition(struct chp_equation *eq, int step)
@@ -127,7 +128,6 @@ static bool chp_stop_condition(struct chp_equation *eq, int step)
     return false;
 }
 
-
 void print_debug_info_1(struct chp_proc *p, struct chp_equation *eq)
 {
      if (p->rank == 1) {
@@ -143,7 +143,8 @@ void print_debug_info_1(struct chp_proc *p, struct chp_equation *eq)
     }
 }
 
-void print_debug_info_2(struct chp_proc *p, struct chp_equation *eq, int step)
+void print_debug_info_2(
+    struct chp_proc *p, struct chp_equation *eq, int step)
 {
      if (p->rank == 1) {
          printf("left step %d:\n", step);
@@ -156,7 +157,79 @@ void print_debug_info_2(struct chp_proc *p, struct chp_equation *eq, int step)
 
 /*stationary*/
 static void
-solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
+solve_equation_schwarz_stationary(
+    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func)
+{
+    chp_equation_border_init(eq, func);
+    chp_equation_rhs_init(eq, func, 0.0);
+    
+    bool quit = false;
+    int step = 0;
+    while (!quit) {
+        cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
+        vector_compute_RHS(eq);
+        matrix_5diag_conjugate_gradient(
+            eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
+
+        //print_debug_info_2(p, &eq, step);
+        chp_mpi_transfer_border_data(p, eq);
+        quit = chp_stop_condition(eq, step);
+        ++ step;
+    }
+    if (!p->rank)
+        printf("#step = %d\n", step);
+
+    char filename[100];
+    snprintf(filename, 100, "numeric.dat.%d", p->rank);
+    chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+}
+
+/*unstationary*/
+static void
+solve_equation_schwarz_unstationary(
+    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func)
+{
+
+    create_directory("sol");
+    chp_equation_border_init(eq, func);
+    double const Tmax = 10.0;
+    int const Nit = 2000;
+    double dt = Tmax / Nit;
+    const int print_step = 1;
+    eq->B += 1.0 / dt;
+
+    double t = 0.0;
+    for (int i = 0; i < Nit; ++i) {
+        t += dt;
+        chp_equation_rhs_init(eq, func, t);
+        int step = 0;
+        bool quit = false;
+        while (!quit) {
+            cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
+            vector_compute_RHS(eq);
+            matrix_5diag_conjugate_gradient(
+                eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
+            
+            //print_debug_info_2(p, &eq, step);
+            chp_mpi_transfer_border_data(p, eq);
+            quit = chp_stop_condition(eq, step);
+            ++ step;
+        }
+
+        if ((i % print_step) == 0) {
+            if (!p->rank)
+                printf("#step = %d\n", step);
+            
+            char filename[100];
+            snprintf(filename, 100,
+                     "sol/sol%d.dat.%d", i/print_step + 1, p->rank);
+            chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+        }
+    }
+}
+
+static void solve_equation_schwarz(
+    struct chp_proc *p, struct gengetopt_args_info *opt)
 {
     int NX = opt->resolutionX_arg;
     int NY = opt->resolutionY_arg;
@@ -173,25 +246,14 @@ solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
     func = chp_get_func_by_id(opt->function_arg);
     chp_func_specialize_rank(func, p->rank, p->group_size);
     chp_equation_grid_init(&eq);
-    chp_equation_border_init(p, &eq, func);
 
-    bool quit = false;
-    int step = 0;
-    while (!quit) {
-        cblas_dcopy(eq.N, eq.rhs_f, 1, eq.rhs, 1);
-        vector_compute_RHS(&eq);
-        matrix_5diag_conjugate_gradient(
-            eq.Nx, eq.Ny, eq.B, eq.Cx, eq.Cy, eq.rhs, eq.U1);
+    if (func->type == CHP_UNSTATIONARY)
+        solve_equation_schwarz_unstationary(p, &eq, func);
+    else if (func->type == CHP_STATIONARY)
+        solve_equation_schwarz_stationary(p, &eq, func);
+    else
+        projchp_error("invalid method type");
 
-        //print_debug_info_2(p, &eq, step);
-        chp_mpi_transfer_border_data(p, &eq);
-        quit = chp_stop_condition(&eq, step);
-        ++ step;
-    }
-    if (!p->rank)
-        printf("#step = %d\n", step);
-
-    chp_output("numeric.dat", eq.Nx, eq.Ny, eq.X, eq.Y, eq.U1);
     chp_equation_free(&eq);
 }
 
@@ -207,7 +269,8 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &P.group_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &P.rank);
 
-    //assert( ((void)"il faut exactement 2 processus MPI", group_size == 2) );
+    //assert( ((void)"il faut exactement 2 processus MPI",
+    //         group_size == 2) );
 
     perf_t p1, p2;
     perf(&p1);
@@ -220,7 +283,8 @@ int main(int argc, char *argv[])
     MPI_Reduce(&micro, &max_t, 1, MPI_UNSIGNED_LONG,
                MPI_MAX, 0, MPI_COMM_WORLD);
     if (!P.rank)
-        fprintf(stderr, "# %dx%d: %lu.%06lu s\n", opt.resolutionX_arg, opt.resolutionY_arg,
+        fprintf(stderr, "# %dx%d: %lu.%06lu s\n",
+                opt.resolutionX_arg, opt.resolutionY_arg,
                 max_t/1000000UL, max_t%1000000UL);
 
     MPI_Finalize();

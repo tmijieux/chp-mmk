@@ -38,7 +38,6 @@ void chp_equation_init(
     if (rank < (NNX%group_size))
         ++ Nx;
 
-
     double recouvrD = ((double)recouvr/NNX)*Lx;
     double Lx_min = max(0.0, ((double)rank / group_size)*Lx - recouvrD/2.0);
     double Lx_max = min(Lx, ((double)(rank+1) / group_size)*Lx + recouvrD/2.0);
@@ -64,6 +63,7 @@ void chp_equation_init(
     eq->Ly_min = Ly_min; eq->Ly_max = Ly_max;
     eq->dx = dx; eq->dy = dy;
     eq->D = D; eq->B = B; eq->Cx = Cx; eq->Cy = Cy;
+    eq->Lx = Lx; eq->Ly = Ly; 
 }
 
 void chp_equation_alloc(struct chp_equation *eq)
@@ -100,17 +100,11 @@ void chp_equation_free(struct chp_equation *eq)
 }
 
 void chp_equation_border_init(
-    struct chp_proc *proc, struct chp_equation *eq, struct chp_func *func)
+    struct chp_equation *eq, struct chp_func *func)
 {
-    (void) proc;
 
     int Nx = eq->Nx, Ny = eq->Ny;
     double *X = eq->X, *Y = eq->Y;
-
-    if (func->type == CHP_STATIONARY)
-        func->rhs(Nx, Ny, X, Y, eq->rhs_f);
-    else
-        func->rhs_unsta(Nx, Ny, X, Y, eq->rhs_f, 1.0, 1.0, 0.0);
 
     func->bottom(Nx, X, eq->bottom, eq->Ly_min);
     func->top(Nx, X, eq->top, eq->Ly_max);
@@ -120,4 +114,12 @@ void chp_equation_border_init(
     //func->U(Nx, Ny, X, Y, Lx_min, Lx_max, Ly, Uexact);
 }
 
-
+void chp_equation_rhs_init(
+    struct chp_equation *eq, struct chp_func *func, double t)
+{
+    if (func->type == CHP_STATIONARY)
+        func->rhs(eq->Nx, eq->Ny, eq->X, eq->Y, eq->rhs_f);
+    else
+        func->rhs_unsta(eq->Nx, eq->Ny, eq->X, eq->Y,
+                        eq->rhs_f, eq->Lx, eq->Ly, t);
+}

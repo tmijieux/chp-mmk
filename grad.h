@@ -3,8 +3,7 @@
 
 #include "equation.h"
 
-
-#define EPSILON   1e-5
+#define EPSILON   1e-6
 #define SWAP_POINTER(p1, p2)                     \
     do {                                        \
         void *tmp_MAXCRO__ = p1;                \

@@ -1,5 +1,5 @@
 TARGET=projCHP test_driver
-CFLAGS=-std=gnu99 -g -Wall -Wextra #$(shell pkg-config --cflags glib-2.0)
+CFLAGS=-std=gnu99 -g -Wall -Wextra -fdiagnostics-color=auto #$(shell pkg-config --cflags glib-2.0)
 LDFLAGS=-lm -l$(BLASLIB) #$(shell pkg-config --libs glib-2.0) 
 GENGETOPT=gengetopt
 CC=mpicc

@@ -14,9 +14,9 @@ struct chp_func
     const char *name;
 
     void (*rhs)(int const Nx,int const Ny,double const*X, double const*Y,double*F);
-    void (*rhs_unsta)(int const Nx,int const Ny,double const*X,double const*Y,
-                      double *F, double const Lx, double const Ly,
-                      double const t);
+    void (*rhs_unsta)(int const Nx,int const Ny,
+                      double const*X,double const*Y, double *F,
+                      double const Lx, double const Ly, double const t);
 
     void (*bottom)(int const N,double const*A,double*B,double value);
     void (*top)(int const N,double const*A,double*B,double value);

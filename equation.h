@@ -9,6 +9,8 @@ struct chp_equation;
 struct chp_equation {
     double Lx_min, Lx_max;
     double Ly_min, Ly_max;
+    double Lx, Ly;
+    
     double dx, dy;
     double D, B, Cx, Cy;
     int Nx, Ny;
@@ -28,8 +30,11 @@ void chp_equation_grid_init(struct chp_equation *eq);
 void chp_equation_init(struct chp_equation *eq,
                        int rank, int group_size, int recouvr,
                        int NNX, int NNY, double Lx, double Ly);
-void chp_equation_border_init(struct chp_proc *proc,
-                              struct chp_equation *eq, struct chp_func *func);
+void chp_equation_border_init(struct chp_equation *eq,
+                              struct chp_func *func);
+void chp_equation_rhs_init(struct chp_equation *eq,
+                           struct chp_func *func, double t);
+
 void chp_equation_alloc(struct chp_equation *eq);
 void chp_equation_free(struct chp_equation *eq);
 

@@ -7,7 +7,6 @@
 #include "equation.h"
 
 #define MAX_NB_ITER 20000
-#define EPSILON   1e-5
 
 #define PASTE2_(x,y) x##y
 #define PASTE2(x,y) PASTE2_(x, y)
