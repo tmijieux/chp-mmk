@@ -158,13 +158,14 @@ void print_debug_info_2(struct chp_proc *p, struct chp_equation *eq, int step)
 static void
 solve_equation_schwarz(struct chp_proc *p, struct gengetopt_args_info *opt)
 {
-    int s = opt->resolution_arg;
+    int NX = opt->resolutionX_arg;
+    int NY = opt->resolutionY_arg;
     int r = opt->recouvr_arg;
 
     struct chp_equation eq;
     struct chp_func *func;
 
-    chp_equation_init(&eq, p->rank, p->group_size, r, s, s,
+    chp_equation_init(&eq, p->rank, p->group_size, r, NX, NY,
                       opt->Lx_arg, opt->Ly_arg);
     chp_mpi_init_type(&eq);
     chp_equation_alloc(&eq);
@@ -219,7 +220,7 @@ int main(int argc, char *argv[])
     MPI_Reduce(&micro, &max_t, 1, MPI_UNSIGNED_LONG,
                MPI_MAX, 0, MPI_COMM_WORLD);
     if (!P.rank)
-        fprintf(stderr, "# %d: %lu.%06lu s\n", opt.resolution_arg,
+        fprintf(stderr, "# %dx%d: %lu.%06lu s\n", opt.resolutionX_arg, opt.resolutionY_arg,
                 max_t/1000000UL, max_t%1000000UL);
 
     MPI_Finalize();

@@ -39,9 +39,12 @@ struct gengetopt_args_info
   const char *function_help; /**< @brief choose method help description.  */
   int list_function_flag;	/**< @brief list available function (default=off).  */
   const char *list_function_help; /**< @brief list available function help description.  */
-  int resolution_arg;	/**< @brief nombre de points par bandes horizontales (default='10').  */
-  char * resolution_orig;	/**< @brief nombre de points par bandes horizontales original value given at command line.  */
-  const char *resolution_help; /**< @brief nombre de points par bandes horizontales help description.  */
+  int resolutionX_arg;	/**< @brief nombre de points totals dans le découpage horizontal (default='10').  */
+  char * resolutionX_orig;	/**< @brief nombre de points totals dans le découpage horizontal original value given at command line.  */
+  const char *resolutionX_help; /**< @brief nombre de points totals dans le découpage horizontal help description.  */
+  int resolutionY_arg;	/**< @brief nombre de points totals dans le découpage vertical (default='10').  */
+  char * resolutionY_orig;	/**< @brief nombre de points totals dans le découpage vertical original value given at command line.  */
+  const char *resolutionY_help; /**< @brief nombre de points totals dans le découpage vertical help description.  */
   int recouvr_arg;	/**< @brief nombre de ligne dans le recouvrement (default='1').  */
   char * recouvr_orig;	/**< @brief nombre de ligne dans le recouvrement original value given at command line.  */
   const char *recouvr_help; /**< @brief nombre de ligne dans le recouvrement help description.  */
@@ -51,12 +54,13 @@ struct gengetopt_args_info
   double Ly_arg;	/**< @brief y = [0, Ly] (default='1.0').  */
   char * Ly_orig;	/**< @brief y = [0, Ly] original value given at command line.  */
   const char *Ly_help; /**< @brief y = [0, Ly] help description.  */
-
+  
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
   unsigned int list_function_given ;	/**< @brief Whether list-function was given.  */
-  unsigned int resolution_given ;	/**< @brief Whether resolution was given.  */
+  unsigned int resolutionX_given ;	/**< @brief Whether resolutionX was given.  */
+  unsigned int resolutionY_given ;	/**< @brief Whether resolutionY was given.  */
   unsigned int recouvr_given ;	/**< @brief Whether recouvr was given.  */
   unsigned int Lx_given ;	/**< @brief Whether Lx was given.  */
   unsigned int Ly_given ;	/**< @brief Whether Ly was given.  */
@@ -146,7 +150,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure
+ * Initializes all the fields a cmdline_parser_params structure 
  * to their default values
  * @param params the structure to initialize
  */
