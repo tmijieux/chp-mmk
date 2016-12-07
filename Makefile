@@ -54,7 +54,7 @@ test_driver: $(OBJ_test_driver)
 	$(CC) -c $(CFLAGS) $*.c -o $*.o
 
 clean:
-	$(RM) $(TARGET) $(OBJ_test_driver) $(OBJ) $(DEP) *.d *.o
+	$(RM) $(OBJ_test_driver) $(OBJ) $(DEP) *.d *.o
 
 mrproper: clean
 	$(RM) $(TARGET)

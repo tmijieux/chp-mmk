@@ -8,9 +8,12 @@ option "function" f "choose method"
        int optional default="0"
 option "list-function" l "list available function" flag off
 
-option "resolution" r "nombre de points par bandes horizontales"
+option "resolutionX" X "nombre de points totals dans le découpage horizontal"
        int optional default="10"
 
+option "resolutionY" Y "nombre de points totals dans le découpage vertical"
+       int optional default="10"
+       
 option "recouvr" R "nombre de ligne dans le recouvrement"
        int optional default="1"
 
