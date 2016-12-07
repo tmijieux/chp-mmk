@@ -4,7 +4,7 @@
 #SBATCH --error=err.0
 #SBATCH -p mistral
 #SBATCH --time=02:00:00
-#  # SBATCH --exclusive
+#SBATCH --exclusive
 #SBATCH --nodes=4
 #SBATCH --ntasks=4
 #SBATCH --ntasks-per-node=1
@@ -13,20 +13,18 @@
 # 4 noeud / 1 proc mpi par noeud
 
 WORKDIR=${WORKDIR:-${HOME}/chp-mmk}
-MPIEXEC=mpirun
+MPIEXEC=mpiexec
 
 cd ${WORKDIR}
 . ./.module.load
 
-mpd & 
+#mpd & 
 
 do_job() {
+    export MKL_NUM_THREADS=20
     size=$1
-    ${MPIEXEC} -n $size ./projCHP
-    rm $file
+    ${MPIEXEC} -np $size ./projCHP -X 100 -Y 100 -f 2 -x 1.0 -y 1.0 -R 5
 }
 
-for i in $(seq 1 20); do
-    do_job $i
-done
+do_job 4
 

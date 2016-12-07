@@ -17,7 +17,6 @@
 #include "cblas.h"
 #include "proc.h"
 
-
 static void
 create_directory(char const *dirname)
 {
@@ -28,7 +27,6 @@ static void
 chp_output(char const *filename, int const Nx, int const Ny,
            double const *X, double const *Y, double const *U)
 {
-    (void) filename;
     FILE *f = fopen(filename, "w");
     if (f == NULL) {
         perror(filename);
@@ -86,21 +84,27 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny;
-    MPI_Status st;
+    MPI_Request r[4] = {
+        MPI_REQUEST_NULL, MPI_REQUEST_NULL,
+        MPI_REQUEST_NULL, MPI_REQUEST_NULL };
+    MPI_Status st[4];
+    memset(st, 0, sizeof st);
 
     if (rank < group_size-1)
-        MPI_Send(eq->U1 + eq->next_border_col,
-                  1, column_type, p->rank+1, rank, MPI_COMM_WORLD);
+        MPI_Isend(eq->U1 + eq->next_border_col,
+                  1, column_type, p->rank+1, rank, MPI_COMM_WORLD, &r[0]);
     if (rank > 0)
-        MPI_Send(eq->U1 + eq->prev_border_col,
-                  1, column_type, p->rank-1, rank-1, MPI_COMM_WORLD);
+        MPI_Isend(eq->U1 + eq->prev_border_col,
+                  1, column_type, p->rank-1,
+                  group_size+rank-1, MPI_COMM_WORLD, &r[1]);
 
     if (rank < group_size-1)
-        MPI_Recv(eq->right, Ny, MPI_DOUBLE,
-                 p->rank+1, rank, MPI_COMM_WORLD, &st);
+        MPI_Irecv(eq->right, Ny, MPI_DOUBLE,
+                 p->rank+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
     if (rank > 0)
-        MPI_Recv(eq->left, Ny, MPI_DOUBLE,
-                 p->rank-1, rank-1, MPI_COMM_WORLD, &st);
+        MPI_Irecv(eq->left, Ny, MPI_DOUBLE,
+                 p->rank-1, rank-1, MPI_COMM_WORLD, &r[3]);
+    MPI_Waitall(4, r, st);
 }
 
 static bool chp_stop_condition(struct chp_equation *eq, int step)
@@ -130,7 +134,7 @@ static bool chp_stop_condition(struct chp_equation *eq, int step)
 
 void print_debug_info_1(struct chp_proc *p, struct chp_equation *eq)
 {
-     if (p->rank == 1) {
+    if (p->rank == 1) {
         printf("Nx=%d; Ny=%d\n", eq->Nx, eq->Ny);
         printf("-1=%g\n", eq->X[0]-eq->dx);
         tdp_vector_print(eq->Nx, eq->X, stdout);
@@ -146,13 +150,13 @@ void print_debug_info_1(struct chp_proc *p, struct chp_equation *eq)
 void print_debug_info_2(
     struct chp_proc *p, struct chp_equation *eq, int step)
 {
-     if (p->rank == 1) {
-         printf("left step %d:\n", step);
-         tdp_vector_print(eq->Ny, eq->left, stdout);
+    if (p->rank == 1) {
+        printf("left step %d:\n", step);
+        tdp_vector_print(eq->Ny, eq->left, stdout);
 
-         printf("right step %d:\n", step);
-         tdp_vector_print(eq->Ny, eq->right, stdout);
-     }
+        printf("right step %d:\n", step);
+        tdp_vector_print(eq->Ny, eq->right, stdout);
+    }
 }
 
 /*stationary*/
@@ -162,7 +166,7 @@ solve_equation_schwarz_stationary(
 {
     chp_equation_border_init(eq, func);
     chp_equation_rhs_init(eq, func, 0.0);
-    
+
     bool quit = false;
     int step = 0;
     while (!quit) {
@@ -170,7 +174,6 @@ solve_equation_schwarz_stationary(
         vector_compute_RHS(eq);
         matrix_5diag_conjugate_gradient(
             eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
-
         //print_debug_info_2(p, &eq, step);
         chp_mpi_transfer_border_data(p, eq);
         quit = chp_stop_condition(eq, step);
@@ -189,7 +192,6 @@ static void
 solve_equation_schwarz_unstationary(
     struct chp_proc *p, struct chp_equation *eq, struct chp_func *func)
 {
-
     create_directory("sol");
     chp_equation_border_init(eq, func);
     double const Tmax = 10.0;
@@ -209,8 +211,6 @@ solve_equation_schwarz_unstationary(
             vector_compute_RHS(eq);
             matrix_5diag_conjugate_gradient(
                 eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
-            
-            //print_debug_info_2(p, &eq, step);
             chp_mpi_transfer_border_data(p, eq);
             quit = chp_stop_condition(eq, step);
             ++ step;
@@ -219,11 +219,12 @@ solve_equation_schwarz_unstationary(
         if ((i % print_step) == 0) {
             if (!p->rank)
                 printf("#step = %d\n", step);
-            
+
             char filename[100];
             snprintf(filename, 100,
                      "sol/sol%d.dat.%d", i/print_step + 1, p->rank);
             chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+            /* printf("i=%d\n", i); */
         }
     }
 }
