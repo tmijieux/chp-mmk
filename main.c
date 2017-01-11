@@ -17,6 +17,12 @@
 #include "cblas.h"
 #include "proc.h"
 
+typedef enum chp_transfer_type_ chp_transfer_type;
+enum chp_transfer_type_ {
+    CHP_TRANSFER_NEUMANN,
+    CHP_TRANSFER_DIRICHLET,
+};
+
 static void
 create_directory(char const *dirname)
 {
@@ -80,7 +86,54 @@ chp_mpi_init_type(struct chp_equation *eq)
 }
 
 static void
-chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
+chp_mpi_transfer_border_data_NEUMANN(
+    struct chp_proc *p, struct chp_equation *eq)
+{
+    int rank = p->rank, group_size = p->group_size;
+    int Ny = eq->Ny, Nx = eq->Nx;
+    MPI_Request r[4] = {
+        MPI_REQUEST_NULL, MPI_REQUEST_NULL,
+        MPI_REQUEST_NULL, MPI_REQUEST_NULL };
+    MPI_Status st[4];
+    memset(st, 0, sizeof st);
+
+    double *tmp_right, *tmp_left;
+    MALLOC_ARRAY(tmp_right, eq->Ny);
+    MALLOC_ARRAY(tmp_left, eq->Ny);
+
+    cblas_dcopy(Ny, eq->U1+eq->next_border_col2, Nx, tmp_right, 1);
+    cblas_daxpy(Ny, -1.0, eq->U1+eq->next_border_col, Nx, tmp_right, 1);
+    cblas_dcopy(Ny, eq->U1+eq->prev_border_col2, Nx, tmp_left, 1);
+    cblas_daxpy(Ny, -1.0, eq->U1+eq->prev_border_col, Nx, tmp_left, 1);
+
+    if (rank < group_size-1)
+        MPI_Isend(tmp_right, Ny, MPI_DOUBLE, p->rank+1,
+                  rank, MPI_COMM_WORLD, &r[0]);
+
+    if (rank > 0)
+        MPI_Isend(tmp_left, Ny, MPI_DOUBLE, p->rank-1,
+                  group_size+rank-1, MPI_COMM_WORLD, &r[1]);
+
+    if (rank < group_size-1)
+        MPI_Irecv(eq->right, Ny, MPI_DOUBLE,
+                  p->rank+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
+
+    if (rank > 0)
+        MPI_Irecv(eq->left, Ny, MPI_DOUBLE,
+                  p->rank-1, rank-1, MPI_COMM_WORLD, &r[3]);
+
+    MPI_Waitall(4, r, st);
+
+    cblas_daxpy(Ny, 1.0, eq->U1+Ny-1, Nx, eq->right, 1);
+    cblas_daxpy(Ny, 1.0, eq->U1, Nx, eq->left, 1);
+
+    free(tmp_right);
+    free(tmp_left);
+}
+
+static void
+chp_mpi_transfer_border_data_DIRICHLET(
+    struct chp_proc *p, struct chp_equation *eq)
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny;
@@ -100,11 +153,23 @@ chp_mpi_transfer_border_data(struct chp_proc *p, struct chp_equation *eq)
 
     if (rank < group_size-1)
         MPI_Irecv(eq->right, Ny, MPI_DOUBLE,
-                 p->rank+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
+                  p->rank+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
     if (rank > 0)
         MPI_Irecv(eq->left, Ny, MPI_DOUBLE,
-                 p->rank-1, rank-1, MPI_COMM_WORLD, &r[3]);
+                  p->rank-1, rank-1, MPI_COMM_WORLD, &r[3]);
     MPI_Waitall(4, r, st);
+}
+
+
+static void
+chp_mpi_transfer_border_data(
+    struct chp_proc *p, struct chp_equation *eq,
+    chp_transfer_type ttype)
+{
+    if (ttype == CHP_TRANSFER_NEUMANN)
+        chp_mpi_transfer_border_data_NEUMANN(p, eq);
+    else if  (ttype == CHP_TRANSFER_DIRICHLET)
+        chp_mpi_transfer_border_data_DIRICHLET(p, eq);
 }
 
 static bool chp_stop_condition(struct chp_equation *eq, int step)
@@ -115,7 +180,7 @@ static bool chp_stop_condition(struct chp_equation *eq, int step)
         return false;
     }
 
-    cblas_daxpy(N, -1, eq->U1, 1, eq->U0, 1);
+    cblas_daxpy(N, -1, eq->U1, 1, eq->U0, 1); // U0 = U0 - U1
     double n = cblas_dnrm2(N, eq->U0, 1);
     double b = cblas_dnrm2(N, eq->U1, 1);
 
@@ -170,12 +235,13 @@ solve_equation_schwarz_stationary(
     bool quit = false;
     int step = 0;
     while (!quit) {
+        printf("!!\n");
         cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
         vector_compute_RHS(eq);
         matrix_5diag_conjugate_gradient(
             eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
         //print_debug_info_2(p, &eq, step);
-        chp_mpi_transfer_border_data(p, eq);
+        chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
         quit = chp_stop_condition(eq, step);
         ++ step;
     }
@@ -199,6 +265,7 @@ solve_equation_schwarz_unstationary(
     double dt = Tmax / Nit;
     const int print_step = 1;
     eq->B += 1.0 / dt;
+    eq->dt = dt;
 
     double t = 0.0;
     for (int i = 0; i < Nit; ++i) {
@@ -211,7 +278,7 @@ solve_equation_schwarz_unstationary(
             vector_compute_RHS(eq);
             matrix_5diag_conjugate_gradient(
                 eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
-            chp_mpi_transfer_border_data(p, eq);
+            chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
             quit = chp_stop_condition(eq, step);
             ++ step;
         }

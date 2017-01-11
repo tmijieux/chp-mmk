@@ -1,7 +1,10 @@
 #include <float.h>
+#include <mpi.h>
+
 #include "equation.h"
 #include "util.h"
 #include "proc.h"
+#include "cblas.h"
 
 void chp_equation_grid_init(struct chp_equation *eq)
 {
@@ -10,19 +13,52 @@ void chp_equation_grid_init(struct chp_equation *eq)
     double *X = eq->X;
     double *Y = eq->Y;
 
-    double m = DBL_MAX, M = DBL_MAX;
+    double m1 = DBL_MAX, M1 = DBL_MAX;
+    double m2 = DBL_MAX, M2 = DBL_MAX;
     for (int i = 0; i < eq->Nx; ++i) {
         X[i] = eq->Lx_min + (i+1)*dx;
         double l = fabs(X[i] - eq->prev_border_x);
-        if (l < m) {
-            m = l;
+        if (l < m1) {
+            m2 = m1;
+            eq->prev_border_col2 = eq->prev_border_col;
+
+            m1 = l;
             eq->prev_border_col = i;
+        } else if (l < m2) {
+            m2 = l;
+            eq->prev_border_col2 = i;
         }
+
         l = fabs(X[i] - eq->next_border_x);
-        if (l < M) {
-            M = l;
+        if (l < M1) {
+            M2 = M1;
+            eq->next_border_col2 = eq->next_border_col;
+            M1 = l;
             eq->next_border_col = i;
+        } else if (l < M2) {
+            M2 = l;
+            eq->next_border_col2 = i;
         }
+    }
+    if (eq->next_border_col2 < eq->next_border_col)
+        SWAP_VARS(eq->next_border_col2, eq->next_border_col);
+
+    if (eq->prev_border_col2 < eq->prev_border_col)
+        SWAP_VARS(eq->prev_border_col2, eq->prev_border_col);
+
+    int size, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    for (int i = 0; i < size; ++i) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (rank == i) {
+            printf("rank %d\n", rank);
+            printf("eq->prev_border_col : (%d, %d)\n",
+                   eq->prev_border_col, eq->prev_border_col2);
+            printf("eq->next_border_col : (%d, %d)\n\n",
+                   eq->next_border_col, eq->next_border_col2);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     for (int i = 0; i < eq->Ny; ++i)
@@ -63,7 +99,7 @@ void chp_equation_init(
     eq->Ly_min = Ly_min; eq->Ly_max = Ly_max;
     eq->dx = dx; eq->dy = dy;
     eq->D = D; eq->B = B; eq->Cx = Cx; eq->Cy = Cy;
-    eq->Lx = Lx; eq->Ly = Ly; 
+    eq->Lx = Lx; eq->Ly = Ly;
 }
 
 void chp_equation_alloc(struct chp_equation *eq)
@@ -119,7 +155,9 @@ void chp_equation_rhs_init(
 {
     if (func->type == CHP_STATIONARY)
         func->rhs(eq->Nx, eq->Ny, eq->X, eq->Y, eq->rhs_f);
-    else
+    else {
         func->rhs_unsta(eq->Nx, eq->Ny, eq->X, eq->Y,
                         eq->rhs_f, eq->Lx, eq->Ly, t);
+        cblas_daxpy(eq->N, 1.0/eq->dt, eq->U0, 1, eq->rhs_f, 1);
+    }
 }

@@ -54,7 +54,7 @@ struct gengetopt_args_info
   double Ly_arg;	/**< @brief y = [0, Ly] (default='1.0').  */
   char * Ly_orig;	/**< @brief y = [0, Ly] original value given at command line.  */
   const char *Ly_help; /**< @brief y = [0, Ly] help description.  */
-  
+
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
@@ -150,7 +150,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure 
+ * Initializes all the fields a cmdline_parser_params structure
  * to their default values
  * @param params the structure to initialize
  */

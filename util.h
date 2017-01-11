@@ -38,6 +38,18 @@
 #define MM256_FMADD_PD(a, b, c) _mm256_add_pd(_mm256_mul_pd(a, b), c)
 #endif
 
+#define MALLOC_ARRAY(var, size) ((var) = malloc((size)*sizeof(*(var))))
+#define CALLOC_ARRAY(var, size) ((var) = calloc((size), sizeof(*(var))))
+
+#define SWAP_VARS(var1, var2)                                   \
+    do {                                                        \
+        /*_Static_assert( typeof((var1)) == typeof((var2)) );*/ \
+        typeof((var1)) tmp_MAXCRO__ = var1;                     \
+        var1 = var2;                                            \
+        var2 = tmp_MAXCRO__;                                    \
+    } while(0)                                                  \
+
+
 double *tdp_matrix_new(int m/*rows*/, int n/*columns*/);
 double *tdp_avx256_aligned_matrix_new(int m/*rows*/, int n/*columns*/);
 void tdp_matrix_zero(int m/*rows*/, int n/*columns*/, double *mat);

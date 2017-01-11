@@ -18,12 +18,8 @@ MPIEXEC=mpiexec
 cd ${WORKDIR}
 . ./.module.load
 
-#mpd & 
+size=4
 
-do_job() {
-    export MKL_NUM_THREADS=20
-    size=$1
-    ${MPIEXEC} -np $size ./projCHP -X 100 -Y 100 -f 2 -x 1.0 -y 1.0 -R 5
-}
+export MKL_NUM_THREADS=20
+${MPIEXEC} -np $size ./projCHP -X 100 -Y 100 -f 0 -x 1.0 -y 1.0 -R 5
 
-do_job 4

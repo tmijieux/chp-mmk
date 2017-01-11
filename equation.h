@@ -10,8 +10,8 @@ struct chp_equation {
     double Lx_min, Lx_max;
     double Ly_min, Ly_max;
     double Lx, Ly;
-    
-    double dx, dy;
+
+    double dx, dy, dt;
     double D, B, Cx, Cy;
     int Nx, Ny;
     int N;
@@ -24,6 +24,7 @@ struct chp_equation {
 
     double next_border_x, prev_border_x;
     int next_border_col, prev_border_col;
+    int next_border_col2, prev_border_col2;
 };
 
 void chp_equation_grid_init(struct chp_equation *eq);
