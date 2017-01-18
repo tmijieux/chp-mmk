@@ -42,7 +42,13 @@ OBJ_test_driver=$(obj_test_driver:.c=.o)
 %.o: %.mod
 
 
-all: $(TARGET)
+all: obj obj/perf $(TARGET)
+	
+obj:
+	mkdir -p obj/
+
+obj/perf:
+	mkdir -p obj/perf/
 
 -include $(DEP)
 
