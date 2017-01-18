@@ -4,7 +4,7 @@
 #include "equation.h"
 
 #define EPSILON   1e-6
-#define SWAP_POINTER(p1, p2)                     \
+#define SWAP_POINTER(p1, p2)                    \
     do {                                        \
         void *tmp_MAXCRO__ = p1;                \
         p1 = p2;                                \
@@ -15,17 +15,17 @@
 void matrix_5diag_jacobi(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X0, double *X);
+    double const *rhs, double const *X0, double *X);
 
 void matrix_5diag_gauss_seidel(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X0, double *X);
+    double const *rhs, double const *X0, double *X);
 
 void matrix_5diag_conjugate_gradient(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X);
+    double const *rhs, double const *X0, double *X);
 
 void matrix_5diag_sym_product(
     int const Nx, int const Ny,

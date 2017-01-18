@@ -171,7 +171,8 @@ chp_mpi_transfer_border_data(
         chp_mpi_transfer_border_data_DIRICHLET(p, eq);
 }
 
-static bool chp_stop_condition(struct chp_equation *eq, int step)
+static bool
+chp_stop_condition(struct chp_equation *eq, struct chp_proc *p, int step)
 {
     int N = eq->Nx*eq->Ny;
     if (step == 0) {
@@ -179,15 +180,37 @@ static bool chp_stop_condition(struct chp_equation *eq, int step)
         return false;
     }
 
+    // U0 = ancienne solution (calculé au tour précédant
+    //                 ou vecteur nul pour le tour 0)
+    // U1 = solution fraichement calculé
     cblas_daxpy(N, -1, eq->U1, 1, eq->U0, 1); // U0 = U0 - U1
     double n = cblas_dnrm2(N, eq->U0, 1);
     double b = cblas_dnrm2(N, eq->U1, 1);
+    // cracra
 
     SWAP_POINTER(eq->U1, eq->U0);
+    // U0 pointe desormais vers la solution "fraichement calculé"
+    // et U1 vers la différence des anciens U0-U1
 
     double v = n/b;
     double max;
     MPI_Allreduce(&v, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (int i = 0; i< p->group_size; ++i){
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (i == p->rank)
+            printf("stop value(%d): ||(U0-U1)|| / ||U0|| = %g\n", p->rank, v);
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (p->rank == 0)
+        printf("stop value: ||(U0-U1)|| / ||U0|| = %g\n\n", max);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (p->rank == 0)
+        puts("");
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (max < EPSILON) {
         SWAP_POINTER(eq->U1, eq->U0);
@@ -236,11 +259,15 @@ solve_equation_schwarz_stationary(
     while (!quit) {
         cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
         vector_compute_RHS(eq);
-        matrix_5diag_conjugate_gradient(
-            eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
+        /* matrix_5diag_conjugate_gradient( */
+        /*     eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1); */
+        matrix_5diag_jacobi(
+            eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+
         //print_debug_info_2(p, &eq, step);
+
         chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
-        quit = chp_stop_condition(eq, step);
+        quit = chp_stop_condition(eq, p, step);
         ++ step;
     }
     if (!p->rank)
@@ -275,9 +302,11 @@ solve_equation_schwarz_unstationary(
             cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
             vector_compute_RHS(eq);
             matrix_5diag_conjugate_gradient(
-                eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U1);
+                eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy,
+                eq->rhs, eq->U0, eq->U1
+            );
             chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
-            quit = chp_stop_condition(eq, step);
+            quit = chp_stop_condition(eq, p, step);
             ++ step;
         }
 

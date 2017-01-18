@@ -24,4 +24,3 @@ option "Lx" x "x = [0, Lx]"
 option "Ly" y "y = [0, Ly]"
        double optional default="1.0"
 
-option "

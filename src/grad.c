@@ -15,11 +15,17 @@
 void matrix_5diag_jacobi(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X0, double *X)
+    double const *rhs, const double *X0, double *X)
 {
     int const N = Nx*Ny;
 
     double *Ax = tdp_vector_new(N);
+    double *X_tmp = tdp_vector_new(N);
+    cblas_dcopy(N, X0, 1, X_tmp, 1);
+    
+    double *X_new = X;
+    double *X_old = X_tmp;
+    
     cblas_dcopy(N, X0, 1, X, 1);
     matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
     cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
@@ -27,66 +33,83 @@ void matrix_5diag_jacobi(
     double gamma = cblas_ddot(N, Ax, 1, Ax, 1);
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
 
-    for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
+    int iter;
+    for (iter = 0; iter < MAX_NB_ITER; ++iter) {
 
-        SWAP_POINTER(X0, X);
+        SWAP_POINTER(X_old, X_new);
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
                 int const k = j*Nx + i;
                 double b = rhs[k];
-                b = b - ((j != 0) ? (Cy * X0[k-Nx]) : 0);
-                b = b - ((i != 0) ? (Cx * X0[k-1]) : 0);
-                b = b - ((i != Nx-1) ? (Cx * X0[k+1]) : 0);
-                b = b - ((j != Ny-1) ? (Cy * X0[k+Nx]) : 0);
-                X[k] = b / B;
+                b = b - ((j != 0) ? (Cy * X_old[k-Nx]) : 0);
+                b = b - ((i != 0) ? (Cx * X_old[k-1]) : 0);
+                b = b - ((i != Nx-1) ? (Cx * X_old[k+1]) : 0);
+                b = b - ((j != Ny-1) ? (Cy * X_old[k+Nx]) : 0);
+                X_new[k] = b / B;
             }
         }
 
-        matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
+        matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X_new, Ax);
         cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
         gamma = cblas_ddot(N, Ax, 1, Ax, 1);
         if ((gamma/nB) <= SQUARE(EPSILON))
             break;
     }
+
+    if (X != X_new)
+        cblas_dcopy(N, X_new, 1, X, 1);
+    free(X_tmp);
+    
+    printf("jacobi_nb_iter=%d\n", iter);
     free(Ax);
 }
 
 void matrix_5diag_gauss_seidel(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X0, double *X)
+    double const *rhs, const double *X0, double *X)
 {
     int const N = Nx*Ny;
 
     double *Ax = tdp_vector_new(N);
+    double *X_tmp = tdp_vector_new(N);
+    cblas_dcopy(N, X0, 1, X_tmp, 1);
+    
+    double *X_new = X;
+    double *X_old = X_tmp;
+    
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
 
     for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
-        SWAP_POINTER(X0, X);
+        SWAP_POINTER(X_old, X_new);
         for (int j = 0; j < Ny; ++j) {
             for (int i = 0; i < Nx; ++i) {
                 int const k = j*Nx+i;
                 double b = rhs[k];
-                b = b - ((j != 0) ? (Cy * X[k-Nx]) : 0.0);
-                b = b - ((i != 0) ? (Cx * X[k-1]) : 0.0);
-                b = b - ((i != Nx-1) ? (Cy * X0[k+1]) : 0.0);
-                b = b - ((j != Ny-1) ? (Cy * X0[k+Nx]) : 0.0);
-                X[k] = b / B;
+                b = b - ((j != 0) ? (Cy * X_new[k-Nx]) : 0.0);
+                b = b - ((i != 0) ? (Cx * X_new[k-1]) : 0.0);
+                b = b - ((i != Nx-1) ? (Cy * X_old[k+1]) : 0.0);
+                b = b - ((j != Ny-1) ? (Cy * X_old[k+Nx]) : 0.0);
+                X_new[k] = b / B;
             }
         }
-        matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
+        matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X_new, Ax);
         cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
         double gamma = cblas_ddot(N, Ax, 1, Ax, 1);
         if ((gamma/nB) <= SQUARE(EPSILON))
             break;
     }
+
+    if (X != X_new)
+        cblas_dcopy(N, X_new, 1, X, 1);
+    free(X_tmp);
     free(Ax);
 }
 
 void matrix_5diag_conjugate_gradient(
     int const Nx, int const Ny,
     double const B, double const Cx, double const Cy,
-    double const *rhs, double *X)
+    double const *rhs, const double *X0, double *X)
 {
     int const N = Nx*Ny;
 
@@ -96,6 +119,7 @@ void matrix_5diag_conjugate_gradient(
     double *Ax = tdp_vector_new(N);
 
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
+    cblas_dcopy(Nx*Ny, X0, 1, X, 1);
 
     matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
     cblas_dcopy(N, rhs, 1, R, 1);
@@ -186,7 +210,7 @@ void matrix_5diag_sym_product(
  *
  */
 void vector_compute_RHS(struct chp_equation *eq)
- {
+{
     int Nx = eq->Nx, Ny = eq->Ny;
 
     cblas_daxpy(Nx, -eq->Cy, eq->bottom, 1, eq->rhs, 1);

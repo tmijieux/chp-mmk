@@ -7,7 +7,7 @@ module load slurm/14.11.11
 
 module load compiler/gcc/4.9.0
 module load intel/mkl/64/11.2/2016.0.0
-module load mpi/openmpi/gcc/2.0.1
+module load mpi/openmpi/gcc/1.10.0-tm
 
 module load trace/htop/1.0.3 
 
