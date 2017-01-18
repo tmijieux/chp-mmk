@@ -22,3 +22,6 @@ option "Lx" x "x = [0, Lx]"
 
 option "Ly" y "y = [0, Ly]"
        double optional default="1.0"
+
+option "solver" s "Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS)"
+       string optional default="CG"

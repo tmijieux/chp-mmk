@@ -59,6 +59,45 @@ void matrix_5diag_gauss_seidel(
     int const N = Nx*Ny;
 
     double *Ax = tdp_vector_new(N);
+    cblas_dcopy(N, X0, 1, X, 1);
+    matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
+    cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
+
+    double gamma = cblas_ddot(N, Ax, 1, Ax, 1);
+    double nB = cblas_ddot(N, rhs, 1, rhs, 1);
+
+    for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
+      
+        SWAP_POINTER(X0, X);
+        for (int j = 0; j < Ny; ++j) {
+            for (int i = 0; i < Nx; ++i) {
+                int const k = j*Nx+i;
+                double b = rhs[k];
+                b = b - ((j != 0) ? (Cy * X[k-Nx]) : 0.0);
+                b = b - ((i != 0) ? (Cx * X[k-1]) : 0.0);
+                b = b - ((i != Nx-1) ? (Cy * X0[k+1]) : 0.0);
+                b = b - ((j != Ny-1) ? (Cy * X0[k+Nx]) : 0.0);
+                X[k] = b / B;
+            }
+        }
+
+	matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
+        cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
+        gamma = cblas_ddot(N, Ax, 1, Ax, 1);
+        if ((gamma/nB) <= SQUARE(EPSILON))
+            break;
+    }
+    free(Ax);
+}
+
+/*void matrix_5diag_gauss_seidel(
+    int const Nx, int const Ny,
+    double const B, double const Cx, double const Cy,
+    double const *rhs, double *X0, double *X)
+{
+    int const N = Nx*Ny;
+
+    double *Ax = tdp_vector_new(N);
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
 
     for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
@@ -81,7 +120,7 @@ void matrix_5diag_gauss_seidel(
             break;
     }
     free(Ax);
-}
+}*/
 
 void matrix_5diag_conjugate_gradient(
     int const Nx, int const Ny,
