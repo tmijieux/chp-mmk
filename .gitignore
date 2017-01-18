@@ -13,4 +13,4 @@ projCHP
 *.dat
 *.dat.*
 test_driver
-
+sol/

@@ -6,6 +6,7 @@ purpose "solve EDPs with Schwarz alternating domain decomposition method"
 
 option "function" f "choose method" 
        int optional default="0"
+
 option "list-function" l "list available function" flag off
 
 option "resolutionX" X "nombre de points totals dans le découpage horizontal"
@@ -22,3 +23,5 @@ option "Lx" x "x = [0, Lx]"
 
 option "Ly" y "y = [0, Ly]"
        double optional default="1.0"
+
+option "

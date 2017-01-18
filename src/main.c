@@ -160,7 +160,6 @@ chp_mpi_transfer_border_data_DIRICHLET(
     MPI_Waitall(4, r, st);
 }
 
-
 static void
 chp_mpi_transfer_border_data(
     struct chp_proc *p, struct chp_equation *eq,
@@ -235,7 +234,6 @@ solve_equation_schwarz_stationary(
     bool quit = false;
     int step = 0;
     while (!quit) {
-        printf("!!\n");
         cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
         vector_compute_RHS(eq);
         matrix_5diag_conjugate_gradient(
@@ -246,7 +244,7 @@ solve_equation_schwarz_stationary(
         ++ step;
     }
     if (!p->rank)
-        printf("#step = %d\n", step);
+        printf("#step=%d\n", step);
 
     char filename[100];
     snprintf(filename, 100, "numeric.dat.%d", p->rank);

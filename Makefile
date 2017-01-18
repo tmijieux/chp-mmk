@@ -20,25 +20,23 @@ LDFLAGS+= -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
 CFLAGS+=-DMKL
 endif
 
-SRC=    cmdline.c \
-	main.c \
-	error.c \
-	perf/perf.c \
-	util.c \
-	grad.c \
-	func.c \
-	equation.c 
+OBJ=    obj/cmdline.o \
+	obj/main.o \
+	obj/error.o \
+	obj/perf/perf.o \
+	obj/util.o \
+	obj/grad.o \
+	obj/func.o \
+	obj/equation.o 
 
-SRC_test_driver = \
-	test_driver.c \
-	util.c \
-	grad.c \
-	func.c
+obj_test_driver = \
+	obj/test_driver.o \
+	obj/util.o \
+	obj/grad.o \
+	obj/func.o
 
-OBJ=$(SRC:.c=.o)
-DEP=$(SRC:.c=.d)
-
-OBJ_test_driver=$(SRC_test_driver:.c=.o)
+DEP=$(OBJ:.o=.d)
+OBJ_test_driver=$(obj_test_driver:.c=.o)
 
 %.o: %.mod
 
@@ -53,9 +51,9 @@ projCHP: $(OBJ)
 test_driver: $(OBJ_test_driver)
 	$(CC) $^ -o $@ $(LDFLAGS) -lgfortran
 
-%.o: %.c
-	@$(CC) -MM $(CFLAGS) $*.c > $*.d
-	$(CC) -c $(CFLAGS) $*.c -o $*.o
+obj/%.o: src/%.c
+	@$(CC) -MM $(CFLAGS) $^ > obj/$*.d
+	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
 	$(RM) $(OBJ_test_driver) $(OBJ) $(DEP) *.d *.o
@@ -63,6 +61,7 @@ clean:
 mrproper: clean
 	$(RM) $(TARGET)
 
-genopt: projCHP.ggo
+genopt: src/projCHP.ggo
 	$(GENGETOPT) < $^
+
 
