@@ -12,6 +12,7 @@ CFLAGS+=-O3 -march=native
 endif
 
 ifeq ($(strip $(BLASLIB)),)
+LDFLAGS+=-lopenblas
 else
 LDFLAGS+= -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
 	${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_gnu_thread.a \

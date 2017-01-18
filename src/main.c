@@ -249,7 +249,7 @@ void print_debug_info_2(
 /*stationary*/
 static void
 solve_equation_schwarz_stationary(
-    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func)
+    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func, char* solver)
 {
     chp_equation_border_init(eq, func);
     chp_equation_rhs_init(eq, func, 0.0);
@@ -259,10 +259,17 @@ solve_equation_schwarz_stationary(
     while (!quit) {
         cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
         vector_compute_RHS(eq);
-        /* matrix_5diag_conjugate_gradient( */
-        /*     eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1); */
-        matrix_5diag_jacobi(
-            eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+
+        if(!strcmp(solver,"CG"))
+            matrix_5diag_conjugate_gradient(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+	else if(!strcmp(solver,"GS"))
+            matrix_5diag_gauss_seidel(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+	else if(!strcmp(solver,"J"))
+            matrix_5diag_jacobi(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+	else{
+            fprintf(stderr, "Solveur invalide: '%s'\n", solver);
+            exit(EXIT_FAILURE);
+	}
 
         //print_debug_info_2(p, &eq, step);
 
@@ -281,7 +288,7 @@ solve_equation_schwarz_stationary(
 /*unstationary*/
 static void
 solve_equation_schwarz_unstationary(
-    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func)
+    struct chp_proc *p, struct chp_equation *eq, struct chp_func *func, char* solver)
 {
     create_directory("sol");
     chp_equation_border_init(eq, func);
@@ -301,10 +308,18 @@ solve_equation_schwarz_unstationary(
         while (!quit) {
             cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
             vector_compute_RHS(eq);
-            matrix_5diag_conjugate_gradient(
-                eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy,
-                eq->rhs, eq->U0, eq->U1
-            );
+
+            if(!strcmp(solver,"CG"))
+                matrix_5diag_conjugate_gradient(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+            else if(!strcmp(solver,"GS"))
+                matrix_5diag_gauss_seidel(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+            else if(!strcmp(solver,"J"))
+                matrix_5diag_jacobi(eq->Nx, eq->Ny, eq->B, eq->Cx, eq->Cy, eq->rhs, eq->U0, eq->U1);
+            else{
+                fprintf(stderr, "Solveur invalide: '%s'\n", solver);
+                exit(EXIT_FAILURE);
+            }
+
             chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
             quit = chp_stop_condition(eq, p, step);
             ++ step;
@@ -329,6 +344,7 @@ static void solve_equation_schwarz(
     int NX = opt->resolutionX_arg;
     int NY = opt->resolutionY_arg;
     int r = opt->recouvr_arg;
+    char* solver = opt->solver_arg;
 
     struct chp_equation eq;
     struct chp_func *func;
@@ -343,9 +359,9 @@ static void solve_equation_schwarz(
     chp_equation_grid_init(&eq);
 
     if (func->type == CHP_UNSTATIONARY)
-        solve_equation_schwarz_unstationary(p, &eq, func);
+        solve_equation_schwarz_unstationary(p, &eq, func, solver);
     else if (func->type == CHP_STATIONARY)
-        solve_equation_schwarz_stationary(p, &eq, func);
+        solve_equation_schwarz_stationary(p, &eq, func, solver);
     else
         projchp_error("invalid method type");
 

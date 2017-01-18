@@ -22,10 +22,10 @@ void matrix_5diag_jacobi(
     double *Ax = tdp_vector_new(N);
     double *X_tmp = tdp_vector_new(N);
     cblas_dcopy(N, X0, 1, X_tmp, 1);
-    
+
     double *X_new = X;
     double *X_old = X_tmp;
-    
+
     cblas_dcopy(N, X0, 1, X, 1);
     matrix_5diag_sym_product(Nx, Ny, B, Cx, Cy, X, Ax);
     cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
@@ -59,7 +59,7 @@ void matrix_5diag_jacobi(
     if (X != X_new)
         cblas_dcopy(N, X_new, 1, X, 1);
     free(X_tmp);
-    
+
     printf("jacobi_nb_iter=%d\n", iter);
     free(Ax);
 }
@@ -74,10 +74,10 @@ void matrix_5diag_gauss_seidel(
     double *Ax = tdp_vector_new(N);
     double *X_tmp = tdp_vector_new(N);
     cblas_dcopy(N, X0, 1, X_tmp, 1);
-    
+
     double *X_new = X;
     double *X_old = X_tmp;
-    
+
     double nB = cblas_ddot(N, rhs, 1, rhs, 1);
 
     for (int iter = 0; iter < MAX_NB_ITER; ++iter) {
