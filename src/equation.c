@@ -88,12 +88,12 @@ static void init_prop(chp_equation *eq, int rank, int group_size,
     eq->Lx = Lx; eq->Ly = Ly;
     eq->Tmax = Tmax;
     eq->Nit = Nit;
+    ASSERT_MSG( Nit > 0, "Le nombre de pas de temps doit être positif.");
 
     if (!stationary) {
         eq->dt = Tmax / Nit;
         eq->B += 1.0 / eq->dt;
     }
-
 }
 
 static void equation_alloc(chp_equation *eq)
@@ -142,10 +142,8 @@ void chp_equation_free(chp_equation *eq)
     free(eq->U1);
 }
 
-void chp_equation_border_init(
-    chp_equation *eq, chp_func *func)
+void chp_equation_border_init(chp_equation *eq, chp_func *func)
 {
-
     int Nx = eq->Nx, Ny = eq->Ny;
     double *X = eq->X, *Y = eq->Y;
 
@@ -168,7 +166,6 @@ void chp_equation_rhs_init(
         cblas_daxpy(eq->N, 1.0/eq->dt, eq->U0, 1, eq->rhs_f, 1);
     }
 }
-
 
 /**
  * This method apply border condition on equation RHS

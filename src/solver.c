@@ -204,7 +204,7 @@ void chp_solver_init(chp_solver *S, chp_equation *eq, const char *solver_arg)
 
 int chp_solver_run(chp_solver *S, double const *rhs, const double *X0, double *X)
 {
-    int N = S->Nx * S->Ny;
+    const int N = S->Nx * S->Ny;
     cblas_dcopy(N, X0, 1, X, 1);
     return S->solve(S->Nx, S->Ny, S->B, S->Cx, S->Cy, rhs, X, S->tmp);
 }

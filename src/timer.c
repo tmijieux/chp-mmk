@@ -9,7 +9,7 @@ void chp_timer_start(chp_timer *T)
 
 void chp_timer_stop(chp_timer *T)
 {
-    perf(&T->p1);
+    perf(&T->p2);
     perf_diff(&T->p1, &T->p2);
 }
 
@@ -21,5 +21,5 @@ void chp_timer_print(chp_timer *T, chp_proc *P)
     MPI_Reduce(&micro, &max_t, 1, MPI_UNSIGNED_LONG,
                MPI_MAX, 0, MPI_COMM_WORLD);
     if (!P->rank)
-        fprintf(stderr, "# %lu.%06lu s\n", max_t/1000000UL, max_t%1000000UL);
+        printf("# %lu.%06lu s\n", max_t/1000000UL, max_t%1000000UL);
 }

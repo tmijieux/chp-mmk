@@ -24,24 +24,18 @@
 #endif
 #define DEQUAL(X_, Y_, H_) (fabs((X_) - (Y_)) < (H_))
 
-#ifdef SQUARE
-#undef SQUARE
-#endif
-#define SQUARE(X_) ((X_)*(X_))
-
-#ifdef CUBE
-#undef CUBE
-#endif
-#define CUBE(X_) ((X_)*(X_)*(X_))
-
 #ifdef __FMA__
 #define MM256_FMADD_PD(a, b, c) _mm256_fmadd_pd(a, b, c)
 #else
 #define MM256_FMADD_PD(a, b, c) _mm256_add_pd(_mm256_mul_pd(a, b), c)
 #endif
 
+#define SQUARE(x)  ((x)*(x))
+#define SQUARE_UL(X) SQUARE(((uint64_t) (X)))
+
 #define MALLOC_ARRAY(var, size) ((var) = malloc((size)*sizeof(*(var))))
 #define CALLOC_ARRAY(var, size) ((var) = calloc((size), sizeof(*(var))))
+#define ASSERT_MSG(msg, cond) assert(  ((void)(msg), (cond)) )
 
 #define SWAP_VARS(var1, var2)                                   \
     do {                                                        \

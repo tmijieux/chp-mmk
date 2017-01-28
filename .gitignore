@@ -14,3 +14,5 @@ projCHP
 *.dat.*
 test_driver
 sol/
+err.0
+out.0

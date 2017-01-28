@@ -56,8 +56,7 @@ static void chp_mpi_init_type(const chp_equation *eq)
 }
 
 static void
-chp_mpi_transfer_border_data_NEUMANN(
-    chp_proc *p, chp_equation *eq)
+chp_mpi_transfer_border_data_NEUMANN( chp_proc *p, chp_equation *eq)
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny, Nx = eq->Nx;
@@ -102,8 +101,7 @@ chp_mpi_transfer_border_data_NEUMANN(
 }
 
 static void
-chp_mpi_transfer_border_data_DIRICHLET(
-    chp_proc *p, chp_equation *eq)
+chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq)
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny;
@@ -142,7 +140,7 @@ chp_mpi_transfer_border_data(
 }
 
 static bool
-chp_stop_condition(chp_equation *eq, chp_proc *p, int step)
+chp_stop_condition(chp_equation *eq, int step)
 {
     int N = eq->Nx*eq->Ny;
     if (step == 0) {
@@ -150,13 +148,12 @@ chp_stop_condition(chp_equation *eq, chp_proc *p, int step)
         return false;
     }
 
-    // U0 = ancienne solution (calculé au tour précédant
-    //                 ou vecteur nul pour le tour 0)
+    // U0 = ancienne solution
+    //   (calculé au tour précédant ou vecteur nul pour le tour 0)
     // U1 = solution fraichement calculé
     cblas_daxpy(N, -1, eq->U1, 1, eq->U0, 1); // U0 = U0 - U1
     double n = cblas_dnrm2(N, eq->U0, 1);
     double b = cblas_dnrm2(N, eq->U1, 1);
-    // cracra
 
     SWAP_POINTER(eq->U1, eq->U0);
     // U0 pointe desormais vers la solution "fraichement calculé"
@@ -165,22 +162,6 @@ chp_stop_condition(chp_equation *eq, chp_proc *p, int step)
     double v = n/b;
     double max;
     MPI_Allreduce(&v, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    for (int i = 0; i< p->group_size; ++i){
-        MPI_Barrier(MPI_COMM_WORLD);
-        if (i == p->rank)
-            printf("stop value(%d): ||(U0-U1)|| / ||U0|| = %g\n", p->rank, v);
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (p->rank == 0)
-        printf("stop value: ||(U0-U1)|| / ||U0|| = %g\n\n", max);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (p->rank == 0)
-        puts("");
-    MPI_Barrier(MPI_COMM_WORLD);
 
     if (max < SCHWARZ_EPSILON) {
         SWAP_POINTER(eq->U1, eq->U0);
@@ -193,22 +174,27 @@ chp_stop_condition(chp_equation *eq, chp_proc *p, int step)
 static void
 solve_stationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
 {
-    chp_equation_border_init(eq, func);
-    chp_equation_rhs_init(eq, func, 0.0);
-
     bool quit = false;
     int schwarz_step = 0;
     int total_step = 0;
 
+    chp_equation_rhs_init(eq, func, 0.0);
+
     while (!quit) {
         chp_equation_apply_border_cond_RHS(eq);
-        total_step += chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
+        int s;
+        s = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
+        if (!p->rank)
+            printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, s);
+
+        total_step += s;
         chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
-        quit = chp_stop_condition(eq, p, schwarz_step);
+        quit = chp_stop_condition(eq, schwarz_step);
         ++ schwarz_step;
+
     }
     if (!p->rank)
-        printf("#schwarz_step=%d\ntotal_step = %d\n", schwarz_step, total_step);
+        printf("# schwarz_step = %d\n# total_step = %d\n", schwarz_step, total_step);
 
     char filename[100];
     snprintf(filename, 100, "numeric.dat.%d", p->rank);
@@ -218,13 +204,12 @@ solve_stationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
 static void
 solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
 {
-    create_directory("sol");
-    chp_equation_border_init(eq, func);
-    const int print_step = 1;
-
+    const int print_step = 100;
     double t = 0.0;
     int total_step = 0;
     int total_schwarz_step = 0;
+
+    create_directory("sol");
 
     for (int i = 0; i < eq->Nit; ++i) {
         t += eq->dt;
@@ -236,14 +221,14 @@ solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
             chp_equation_apply_border_cond_RHS(eq);
             total_step += chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
             chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
-            quit = chp_stop_condition(eq, p, schwarz_step);
+            quit = chp_stop_condition(eq, schwarz_step);
             ++ schwarz_step;
         }
         total_schwarz_step += schwarz_step;
 
         if ((i % print_step) == 0) {
             if (!p->rank)
-                printf("#schwarz_step = %d\n", schwarz_step);
+                printf("# time_step(%d): schwarz_step = %d\n", i, schwarz_step);
 
             char filename[100];
             snprintf(filename, 100,
@@ -251,6 +236,10 @@ solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
             chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
         }
     }
+
+    if (!p->rank)
+        printf("# total_schwarz_step = %d\n# total_step = %d\n",
+               total_schwarz_step, total_step);
 }
 
 void chp_schwarz_solver_init(
@@ -263,6 +252,8 @@ void chp_schwarz_solver_init(
         chp_error("invalid method type");
 
     chp_equation_init(&S->eq, p, opt, S->stationary);
+    chp_equation_border_init(&S->eq, &S->func);
+
     chp_mpi_init_type(&S->eq);
     chp_solver_init(&S->S, &S->eq, opt->solver_arg);
 }
