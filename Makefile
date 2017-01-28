@@ -26,14 +26,18 @@ OBJ=    obj/cmdline.o \
 	obj/error.o \
 	obj/perf/perf.o \
 	obj/util.o \
-	obj/grad.o \
+	obj/solver.o \
 	obj/func.o \
-	obj/equation.o 
+	obj/equation.o \
+	obj/proc.o \
+	obj/schwarz_solver.o \
+	obj/timer.o
 
 obj_test_driver = \
 	obj/test_driver.o \
 	obj/util.o \
-	obj/grad.o \
+	obj/solver.o \
+	obj/equation.o \
 	obj/func.o
 
 DEP=$(OBJ:.o=.d)
@@ -43,7 +47,7 @@ OBJ_test_driver=$(obj_test_driver:.c=.o)
 
 
 all: obj obj/perf $(TARGET)
-	
+
 obj:
 	mkdir -p obj/
 

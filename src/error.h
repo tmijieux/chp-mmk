@@ -1,5 +1,5 @@
-#ifndef PROJCHP_ERROR_H
-#define PROJCHP_ERROR_H
+#ifndef CHP_ERROR_H
+#define CHP_ERROR_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,17 +8,17 @@
 #include <errno.h>
 
 
-#define PROJCHP_ERROR_LIST(ERROR)                  \
+#define CHP_ERROR_LIST(ERROR)                  \
     ERROR(SUCCESS)                              \
 
 
-#define PROJCHP_ERROR_TO_ENUM(error) PROJCHP_ERROR_##error,
+#define CHP_ERROR_TO_ENUM(error) CHP_ERROR_##error,
 
-enum projchp_error_code {
-    PROJCHP_ERROR_LIST(PROJCHP_ERROR_TO_ENUM)
+enum chp_error_code {
+    CHP_ERROR_LIST(CHP_ERROR_TO_ENUM)
 };
 
-char const *projchp_errmsg(int errcode);
+char const *chp_errmsg(int errcode);
 
 #ifndef __GNUC__
 #define __PRETTY_FUNCTION__    __FUNCDNAME__
@@ -28,14 +28,14 @@ char const *projchp_errmsg(int errcode);
 #define __FILENAME__ (strrchr(__FILE__, '/') ?                  \
                       strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define projchp_error(format_, ...)                                \
+#define chp_error(format_, ...)                                \
     do {                                                        \
         fprintf(stderr, "ERROR: %s:%d|%s: ",  __FILENAME__ ,    \
                 __LINE__, __PRETTY_FUNCTION__);                 \
         fprintf(stderr, (format_), ##__VA_ARGS__);              \
     } while(0)
 
-#define projchp_fatal(format_, ...)                                        \
+#define chp_fatal(format_, ...)                                        \
     do {                                                                \
         fprintf(stderr, "FATAL ERROR: %s:%d|%s: ",  __FILENAME__ ,      \
                 __LINE__, __PRETTY_FUNCTION__);                         \
@@ -43,7 +43,7 @@ char const *projchp_errmsg(int errcode);
         exit(EXIT_FAILURE);                                             \
     } while(0)
 
-#define projchp_warning(format_, ...)                              \
+#define chp_warning(format_, ...)                              \
     do {                                                        \
         fprintf(stderr, "WARNING: %s:%d|%s: ",  __FILENAME__ ,  \
                 __LINE__, __PRETTY_FUNCTION__);                 \
@@ -51,14 +51,14 @@ char const *projchp_errmsg(int errcode);
     } while(0)
 
 #ifdef DEBUG
-#define projchp_debug(format_, ...)                                        \
+#define chp_debug(format_, ...)                                        \
     do {                                                                \
         fprintf(stderr, "DEBUG: %s:%d|%s: " format_, __FILENAME__ ,     \
                 __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);          \
     } while(0)
 
 #else // DEBUG
-#define projchp_debug(format_, ...) ((void) (format_))
+#define chp_debug(format_, ...) ((void) (format_))
 #endif // DEBUG
 
-#endif // PROJCHP_ERROR_H
+#endif // CHP_ERROR_H

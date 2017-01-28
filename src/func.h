@@ -2,15 +2,19 @@
 #define CHP_FUNC_H
 
 #include <stdlib.h>
+#include "proc.h"
 
-enum chp_func_type {
+typedef enum chp_func_type_ chp_func_type;
+
+enum chp_func_type_ {
     CHP_STATIONARY,
     CHP_UNSTATIONARY,
 };
 
-struct chp_func
-{
-    enum chp_func_type type;
+typedef struct chp_func_ chp_func;
+
+struct chp_func_ {
+    chp_func_type type;
     const char *name;
 
     void (*rhs)(int const Nx,int const Ny,double const*X, double const*Y,double*F);
@@ -26,11 +30,11 @@ struct chp_func
     void (*U)(int const Nx, int const Ny, double const *X, double const *Y,
               double const Lx, double const Ly, double *U);
 
-    struct chp_func *next;
+    chp_func *next;
 };
 
 extern unsigned func_list_length;
-extern struct chp_func *func_list;
+extern chp_func *func_list;
 
 #define PASTE2_(x,y) x##y
 #define PASTE2(x,y) PASTE2_(x, y)
@@ -40,7 +44,7 @@ extern struct chp_func *func_list;
     static void __attribute__((constructor))                    \
     PASTE2(_register_func_,__COUNTER__)(void)                   \
     {                                                           \
-        static struct chp_func meth = {                         \
+        static chp_func meth = {                         \
             .type = CHP_##type_,                                \
             .name = #func_name   "  ("#type_")",                \
             .bottom = bottom_,                                  \
@@ -57,8 +61,8 @@ extern struct chp_func *func_list;
         ++ func_list_length;                                    \
     }
 
-void chp_func_specialize_rank(struct chp_func *func, int rank, int group_size);
-struct chp_func *chp_get_func_by_name(char const *name);
-struct chp_func *chp_get_func_by_id(unsigned idx);
+void chp_func_specialize_rank(chp_func *func, int rank, int group_size);
+void chp_func_init(chp_func *func, unsigned idx, chp_proc *P);
+void chp_print_func_list(void);
 
 #endif // CHP_FUNC_H

@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <omp.h>
 
+#include "error.h"
+
 #ifndef min
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #endif
@@ -49,6 +51,12 @@
         var2 = tmp_MAXCRO__;                                    \
     } while(0)                                                  \
 
+#define SWAP_POINTER(p1, p2)                    \
+    do {                                        \
+        void *tmp_MAXCRO__ = p1;                \
+        p1 = p2;                                \
+        p2 = tmp_MAXCRO__;                      \
+    } while(0)                                  \
 
 double *tdp_matrix_new(int m/*rows*/, int n/*columns*/);
 double *tdp_avx256_aligned_matrix_new(int m/*rows*/, int n/*columns*/);

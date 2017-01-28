@@ -6,7 +6,7 @@
 #include "proc.h"
 #include "cblas.h"
 
-void chp_equation_grid_init(struct chp_equation *eq)
+static void init_grid(chp_equation *eq)
 {
     double dx = eq->dx;
     double dy = eq->dy;
@@ -46,32 +46,18 @@ void chp_equation_grid_init(struct chp_equation *eq)
     if (eq->prev_border_col2 < eq->prev_border_col)
         SWAP_VARS(eq->prev_border_col2, eq->prev_border_col);
 
-    int size, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    for (int i = 0; i < size; ++i) {
-        MPI_Barrier(MPI_COMM_WORLD);
-        if (rank == i) {
-            printf("rank %d\n", rank);
-            printf("eq->prev_border_col : (%d, %d)\n",
-                   eq->prev_border_col, eq->prev_border_col2);
-            printf("eq->next_border_col : (%d, %d)\n\n",
-                   eq->next_border_col, eq->next_border_col2);
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-
     for (int i = 0; i < eq->Ny; ++i)
         Y[i] = eq->Ly_min + (i+1)*dy;
 }
 
-void chp_equation_init(
-    struct chp_equation *eq, int rank, int group_size,
-    int recouvr, int NNX, int NNY, double Lx, double Ly)
+static void init_prop(chp_equation *eq, int rank, int group_size,
+                      int NNX, int NNY, int recouvr,
+                      double Lx, double Ly, double Tmax, int Nit, bool stationary)
 {
     int Nx = NNX / group_size;
     int Ny = NNY;
-    if (rank < (NNX%group_size))
+
+        if (rank < (NNX % group_size))
         ++ Nx;
 
     double recouvrD = ((double)recouvr/NNX)*Lx;
@@ -100,9 +86,17 @@ void chp_equation_init(
     eq->dx = dx; eq->dy = dy;
     eq->D = D; eq->B = B; eq->Cx = Cx; eq->Cy = Cy;
     eq->Lx = Lx; eq->Ly = Ly;
+    eq->Tmax = Tmax;
+    eq->Nit = Nit;
+
+    if (!stationary) {
+        eq->dt = Tmax / Nit;
+        eq->B += 1.0 / eq->dt;
+    }
+
 }
 
-void chp_equation_alloc(struct chp_equation *eq)
+static void equation_alloc(chp_equation *eq)
 {
     int Nx = eq->Nx, Ny = eq->Ny;
     int N = Nx*Ny;
@@ -122,7 +116,20 @@ void chp_equation_alloc(struct chp_equation *eq)
     eq->U1 = tdp_vector_new(N);
 }
 
-void chp_equation_free(struct chp_equation *eq)
+void chp_equation_init(
+    chp_equation *eq, chp_proc *P, struct gengetopt_args_info *opt, bool stationary)
+{
+    memset(eq, 0, sizeof*eq);
+    init_prop(eq, P->rank, P->group_size,
+              opt->resolutionX_arg, opt->resolutionY_arg,
+              opt->recouvr_arg, opt->Lx_arg, opt->Ly_arg,
+              opt->Tmax_arg, opt->Nit_arg, stationary);
+
+    equation_alloc(eq);
+    init_grid(eq);
+}
+
+void chp_equation_free(chp_equation *eq)
 {
     free(eq->top);
     free(eq->bottom);
@@ -136,7 +143,7 @@ void chp_equation_free(struct chp_equation *eq)
 }
 
 void chp_equation_border_init(
-    struct chp_equation *eq, struct chp_func *func)
+    chp_equation *eq, chp_func *func)
 {
 
     int Nx = eq->Nx, Ny = eq->Ny;
@@ -151,7 +158,7 @@ void chp_equation_border_init(
 }
 
 void chp_equation_rhs_init(
-    struct chp_equation *eq, struct chp_func *func, double t)
+    chp_equation *eq, chp_func *func, double t)
 {
     if (func->type == CHP_STATIONARY)
         func->rhs(eq->Nx, eq->Ny, eq->X, eq->Y, eq->rhs_f);
@@ -160,4 +167,28 @@ void chp_equation_rhs_init(
                         eq->rhs_f, eq->Lx, eq->Ly, t);
         cblas_daxpy(eq->N, 1.0/eq->dt, eq->U0, 1, eq->rhs_f, 1);
     }
+}
+
+
+/**
+ * This method apply border condition on equation RHS
+ *
+ * g is condition on x border | size 2*Nx
+ * (first half is bottom, second half is top)
+ *
+ * h is condition on y border | size 2*Ny
+ * (first half is left, second half is right)
+ *
+ */
+void chp_equation_apply_border_cond_RHS(chp_equation *eq)
+{
+    int Nx = eq->Nx, Ny = eq->Ny;
+
+    cblas_dcopy(eq->N, eq->rhs_f, 1, eq->rhs, 1);
+
+    cblas_daxpy(Nx, -eq->Cy, eq->bottom, 1, eq->rhs, 1);
+    cblas_daxpy(Nx, -eq->Cy, eq->top, 1, eq->rhs+Nx*(Ny-1), 1);
+
+    cblas_daxpy(Ny, -eq->Cx, eq->left, 1, eq->rhs, Nx);
+    cblas_daxpy(Ny, -eq->Cx, eq->right, 1, eq->rhs+Nx-1, Nx);
 }

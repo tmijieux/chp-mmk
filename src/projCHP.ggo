@@ -24,6 +24,11 @@ option "Lx" x "x = [0, Lx]"
 option "Ly" y "y = [0, Ly]"
        double optional default="1.0"
 
-
 option "solver" s "Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS)"
        string optional default="CG"
+
+option "Nit" n "Nombre de pas de temps"
+       int optional default=2000
+
+option "Tmax" t "Durée de l'évolution en secondes"
+       double optional default="10.0"

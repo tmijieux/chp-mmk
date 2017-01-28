@@ -4,9 +4,10 @@
 
 #include "util.h"
 #include "func.h"
+#include "solver.h"
 
 unsigned func_list_length = 0;
-struct chp_func *func_list = NULL;
+chp_func *func_list = NULL;
 
 void
 zero(int const N, double const *A, double *B, double v)
@@ -120,38 +121,42 @@ REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),
                   rhs_1, NULL, U_1);
 
 
-void
-chp_func_specialize_rank(struct chp_func *func, int rank, int group_size)
-{
-    if (rank > 0)
-        func->left = zero;
-
-    if (rank < group_size-1)
-        func->right = zero;
-}
-
-struct chp_func *
-chp_get_func_by_name(char const *name)
-{
-    struct chp_func *l = func_list;
-    while (l != NULL) {
-        if (!strcmp(l->name, name))
-            return l;
-        l = l->next;
-    }
-    return NULL;
-}
-
-struct chp_func*
-chp_get_func_by_id(unsigned idx)
+static void get_func_by_id(unsigned idx, chp_func *func)
 {
     if (idx >= func_list_length) {
         fprintf(stderr, "No such func!\n");
         exit(EXIT_FAILURE);
+
     }
 
-    struct chp_func *l = func_list;
+    chp_func *l = func_list;
     while (idx--)
         l = l->next;
-    return l;
+
+    *func = *l;
+}
+
+void chp_func_init(chp_func *func, unsigned idx, chp_proc *P)
+{
+    memset(func, 0, sizeof*func);
+    get_func_by_id(idx, func);
+
+    if (P->rank > 0)
+        func->left = zero;
+
+    if (P->rank < P->group_size-1)
+        func->right = zero;
+}
+
+void chp_print_func_list(void)
+{
+    printf("Function list:\n");
+    chp_func *list = func_list;
+    int i = 0;
+    while (list != NULL) {
+        printf("%d: %s\n", i, list->name);
+        list = list->next;
+        ++ i;
+    }
+
 }
