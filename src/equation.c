@@ -108,7 +108,6 @@ static void equation_alloc(chp_equation *eq)
 
     eq->X = tdp_vector_new(Nx);
     eq->Y = tdp_vector_new(Ny);
-    //eq->Y = NULL;
 
     eq->rhs = tdp_vector_new(N);
     eq->rhs_f = tdp_vector_new(N);
@@ -138,8 +137,11 @@ void chp_equation_free(chp_equation *eq)
     free(eq->X);
     free(eq->Y);
     free(eq->rhs);
+    free(eq->rhs_f);
     free(eq->U0);
     free(eq->U1);
+
+    memset(eq, 0, sizeof*eq);
 }
 
 void chp_equation_border_init(chp_equation *eq, chp_func *func)

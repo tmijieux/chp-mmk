@@ -129,13 +129,11 @@ chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq)
 }
 
 static void
-chp_mpi_transfer_border_data(
-    chp_proc *p, chp_equation *eq,
-    chp_transfer_type ttype)
+chp_mpi_transfer_border_data(chp_proc *p, chp_equation *eq, chp_transfer_type type)
 {
-    if (ttype == CHP_TRANSFER_NEUMANN)
+    if (type == CHP_TRANSFER_NEUMANN)
         chp_mpi_transfer_border_data_NEUMANN(p, eq);
-    else if  (ttype == CHP_TRANSFER_DIRICHLET)
+    else if  (type == CHP_TRANSFER_DIRICHLET)
         chp_mpi_transfer_border_data_DIRICHLET(p, eq);
 }
 
@@ -245,6 +243,8 @@ solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
 void chp_schwarz_solver_init(
     chp_schwarz_solver *S, chp_proc *p, struct gengetopt_args_info *opt)
 {
+    memset(S, 0, sizeof*S);
+
     chp_func_init(&S->func, opt->function_arg, p);
     S->stationary = (S->func.type == CHP_STATIONARY);
 
@@ -270,4 +270,5 @@ void chp_schwarz_solver_free(chp_schwarz_solver *S)
 {
     chp_equation_free(&S->eq);
     chp_solver_free(&S->S);
+    memset(S, 0, sizeof*S);
 }

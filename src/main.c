@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 
     chp_timer_print(&T, &P);
 
+    chp_schwarz_solver_free(&S);
+    cmdline_parser_free(&opt);
     chp_proc_fini(&P);
     return EXIT_SUCCESS;
 }
