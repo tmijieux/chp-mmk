@@ -19,7 +19,9 @@ test_apply_border_cond_RHS(void)
     double Cx = 0.1, Cy = 0.1;
 
     chp_equation eq;
+    eq.rhs_f = tdp_vector_new(Nx*Ny);
     eq.rhs = tdp_vector_new(Nx*Ny);
+        
     eq.right = tdp_vector_new(Ny);
     eq.left = tdp_vector_new(Ny);
     eq.bottom = tdp_vector_new(Nx);
