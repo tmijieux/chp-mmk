@@ -28,7 +28,7 @@ option "solver" s "Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS)"
        string optional default="CG"
 
 option "Nit" n "Nombre de pas de temps"
-       int optional default=2000
+       int optional default="2000"
 
 option "Tmax" t "Durée de l'évolution en secondes"
        double optional default="10.0"

@@ -73,6 +73,6 @@ mrproper: clean
 	$(RM) $(TARGET)
 
 genopt: src/projCHP.ggo
-	$(GENGETOPT) < $^
+	$(GENGETOPT) < $^ --output-dir=src/
 
 

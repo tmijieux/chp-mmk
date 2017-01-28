@@ -62,6 +62,12 @@ struct gengetopt_args_info
   char * solver_arg;	/**< @brief Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS) (default='CG').  */
   char * solver_orig;	/**< @brief Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS) original value given at command line.  */
   const char *solver_help; /**< @brief Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS) help description.  */
+  int Nit_arg;	/**< @brief Nombre de pas de temps (default='2000').  */
+  char * Nit_orig;	/**< @brief Nombre de pas de temps original value given at command line.  */
+  const char *Nit_help; /**< @brief Nombre de pas de temps help description.  */
+  double Tmax_arg;	/**< @brief Durée de l'évolution en secondes (default='10.0').  */
+  char * Tmax_orig;	/**< @brief Durée de l'évolution en secondes original value given at command line.  */
+  const char *Tmax_help; /**< @brief Durée de l'évolution en secondes help description.  */
 
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -73,6 +79,8 @@ struct gengetopt_args_info
   unsigned int Lx_given ;	/**< @brief Whether Lx was given.  */
   unsigned int Ly_given ;	/**< @brief Whether Ly was given.  */
   unsigned int solver_given ;	/**< @brief Whether solver was given.  */
+  unsigned int Nit_given ;	/**< @brief Whether Nit was given.  */
+  unsigned int Tmax_given ;	/**< @brief Whether Tmax was given.  */
 
 } ;
 
