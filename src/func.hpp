@@ -14,7 +14,7 @@ class func {
 
 public:
     static std::vector<func*> func_list;
-    
+
     enum type {
         STATIONARY,
         UNSTATIONARY,
@@ -28,7 +28,7 @@ public:
     typedef void (*border_t)(int const, double const*, double*, double);
     typedef void (*U_t)(int const, int const, double const*, double const*,
                         double const, double const, double*);
-        
+
     type _type;
     std::string _name;
 
@@ -54,7 +54,7 @@ public:
 #define PASTE2_(x,y) x##y
 #define PASTE2(x,y) PASTE2_(x, y)
 
-#define REGISTER_FUNCTION(func_name, type_, bottom_, top_,     \
+#define REGISTER_FUNCTION(func_name, type_, bottom_, top_,      \
                           right_, left_, rhs_, rhs_unsta_, U_)  \
     static func PASTE2(_meth_,__COUNTER__)(                     \
         (#func_name   "  ("#type_")"),                          \

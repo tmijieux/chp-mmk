@@ -9,33 +9,32 @@
 
 using namespace chp;
 
-static void handle_opt(struct gengetopt_args_info *opt)
-{
-    if (opt->list_function_flag) {
-        func::print_list();
-        exit(EXIT_SUCCESS);
+
+struct config : public gengetopt_args_info {
+    config(int &argc, char **&argv) {
+        cmdline_parser(argc, argv, this);
+        if (this->list_function_flag) {
+            func::print_list();
+            throw exception("");
+        }
     }
-}
+    ~config() { cmdline_parser_free(this); }
+};
 
 int main(int argc, char *argv[])
 {
     try {
-        struct gengetopt_args_info opt;
+        config opt(argc, argv);
         proc P;
         timer T;
-        
-        cmdline_parser(argc, argv, &opt);
-        handle_opt(&opt);
-        
         schwarz_solver S(P, &opt);
 
         T.start();
         S.run(P);
         T.stop();
-        
+
         T.print(P);
-        
-        cmdline_parser_free(&opt);
+
     } catch (exception &e) {
         std::cout << e.what() << std::endl;
     }

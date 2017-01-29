@@ -13,7 +13,7 @@ public:
     void start();
     void stop();
     void print(proc const& p) const;
-    
+
     virtual ~timer(){}
 };
 

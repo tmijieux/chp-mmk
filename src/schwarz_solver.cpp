@@ -121,7 +121,7 @@ void schwarz_solver::transfer_border_data(proc const& p, transfer_type type)
 
 bool schwarz_solver::stop_condition(int step)
 {
-    int N = _eq.Nx*_eq.Ny;
+    int N = _eq.N;
     if (step == 0) {
         std::swap(_eq.U1, _eq.U0);
         return false;
@@ -220,7 +220,7 @@ schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info *opt):
     _func(func::get_func(opt->function_arg, p)),
     _stationary(_func._type == func::STATIONARY),
     _eq(p, opt, _stationary),
-    _S(solver::make_solver(_eq, opt->solver_arg))
+    _S(NULL)
 {
     if (_func._type != func::STATIONARY && _func._type != func::UNSTATIONARY)
         throw exception("invalid method type");
@@ -228,6 +228,8 @@ schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info *opt):
     _eq.border_init(_func);
 
     init_mpi_type();
+
+    _S = solver::make_solver(_eq, opt->solver_arg);
 
     for (int i = 0; i < 2; ++i)
         _tmp[i].resize(_eq.Ny);

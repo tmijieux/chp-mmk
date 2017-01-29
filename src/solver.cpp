@@ -66,7 +66,6 @@ void jacobi_solver::impl(const double * __restrict__ rhs,
 
 int jacobi_solver::_solve(const double *__restrict__ rhs, double *__restrict__ X)
 {
-    int const N = Nx*Ny;
     double *Ax = &_tmp[0][0];
     double *X_new = &_tmp[1][0];
     double *X_old = X;
@@ -79,7 +78,7 @@ int jacobi_solver::_solve(const double *__restrict__ rhs, double *__restrict__ X
         gemv_5diag(X_new, Ax);
         cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
         double gamma = cblas_ddot(N, Ax, 1, Ax, 1);
-        if ((gamma/nB) <= SQUARE(SOLVER_EPSILON))
+        if ((gamma/nB) <= SQUARE(EPSILON))
             break;
     }
 
@@ -201,7 +200,7 @@ int gauss_seidel_solver::_solve(const double * __restrict__ rhs, double * __rest
         gemv_5diag(X_new, Ax);
         cblas_daxpy(N, -1.0, rhs, 1, Ax, 1);
         double gamma = cblas_ddot(N, Ax, 1, Ax, 1);
-        if ((gamma/nB) <= SQUARE(SOLVER_EPSILON))
+        if ((gamma/nB) <= SQUARE(EPSILON))
             break;
     }
 
@@ -238,14 +237,13 @@ int CG_solver::_solve(const double * __restrict__ rhs,  double * __restrict__ X)
         double gammaOld = gammaNew;
         gammaNew = cblas_ddot(N, R, 1, R, 1);
 
-        if ((gammaNew/nB) <= SQUARE(SOLVER_EPSILON))
+        if ((gammaNew/nB) <= SQUARE(EPSILON))
             break;
 
         double beta = gammaNew / gammaOld;
         cblas_dscal(N, beta, P, 1);
         cblas_daxpy(N, 1.0, R, 1, P, 1);
     }
-
     return iter;
 }
 

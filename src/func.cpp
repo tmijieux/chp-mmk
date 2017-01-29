@@ -103,11 +103,11 @@ rhs_3(int const Nx, int const Ny, double const *X, double const *Y,
     }
 }
 
-REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
-                  UNSTATIONARY,
+REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),
+                  STATIONARY,
                   zero, zero,
-                  one, one,
-                  nullptr, rhs_3, nullptr);
+                  zero, zero,
+                  rhs_1, nullptr, U_1);
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),
                   STATIONARY,
@@ -115,11 +115,11 @@ REGISTER_FUNCTION(f=sin(x)+cos(y),
                   right_left_2, right_left_2,
                   rhs_2, nullptr, U_2);
 
-REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),
-                  STATIONARY,
+REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
+                  UNSTATIONARY,
                   zero, zero,
-                  zero, zero,
-                  rhs_1, nullptr, U_1);
+                  one, one,
+                  nullptr, rhs_3, nullptr);
 
 
 func::func(std::string const& name, func::type type,
@@ -130,7 +130,6 @@ func::func(std::string const& name, func::type type,
 {
     func_list.push_back(this);
 }
-
 
 const func& func::specialize_rank(proc const &P)
 {

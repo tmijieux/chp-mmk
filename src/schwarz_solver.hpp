@@ -26,11 +26,11 @@ private:
     void mpi_transfer_border_data_NEUMANN(proc const& p);
     void mpi_transfer_border_data_DIRICHLET(proc const& p);
     void transfer_border_data(proc const& p, transfer_type type);
-    
-    
+
+
 protected:
-    static const int EPSILON = 1e-8;
-    
+    static constexpr const double EPSILON = 1e-8;
+
     const func& _func;
     bool _stationary;
     equation _eq;

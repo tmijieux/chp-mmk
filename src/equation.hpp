@@ -16,7 +16,7 @@ private:
     void init_grid();
     void init_prop(proc const& P, int, int, int, bool);
     void alloc();
-    
+
 public:
     int Nx, Ny, N;
     double Lx_min, Lx_max;
