@@ -1,0 +1,52 @@
+#ifndef CHP_EQUATION_H
+#define CHP_EQUATION_H
+
+#include <stdbool.h>
+
+#include "func.hpp"
+#include "proc.hpp"
+#include "cmdline.h"
+
+namespace chp {
+
+
+class equation {
+private:
+
+    void init_grid();
+    void init_prop(proc const& P, int, int, int, bool);
+    void alloc();
+    
+public:
+    int Nx, Ny, N;
+    double Lx_min, Lx_max;
+    double Ly_min, Ly_max;
+    double Lx, Ly;
+
+    int Nit;
+    double Tmax;
+    double dx, dy, dt;
+    double D, B, Cx, Cy;
+
+    double *X, *Y;
+    double *top, *bottom, *left, *right;
+    double *rhs, *rhs_f;
+
+    double *U0, *U1;
+
+    double next_border_x, prev_border_x;
+    int next_border_col, prev_border_col;
+    int next_border_col2, prev_border_col2;
+
+    equation(proc const& P, struct gengetopt_args_info *opt, bool stationary);
+    void border_init(func const &f);
+    void rhs_init(func const &f, double t);
+    void apply_border_cond_RHS();
+    ~equation();
+
+};
+
+};
+
+
+#endif // CHP_EQUATION_H

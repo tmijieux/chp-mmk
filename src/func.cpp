@@ -1,24 +1,25 @@
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <iostream>
 
+#include "error.hpp"
+#include "func.hpp"
+#include "solver.hpp"
 #include "util.h"
-#include "func.h"
-#include "solver.h"
 
-unsigned func_list_length = 0;
-chp_func *func_list = NULL;
+using namespace chp;
 
-void
-zero(int const N, double const *A, double *B, double v)
+std::vector<func*> func::func_list;
+
+void zero(int const N, double const *A, double *B, double v)
 {
     (void) A;
     (void) v;
     memset(B, 0, N*sizeof B[0]);
 }
 
-static void
-one(int const N, double const *A, double *B, double v)
+static void one(int const N, double const *A, double *B, double v)
 {
     (void) A;
     (void) v;
@@ -106,57 +107,53 @@ REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
                   UNSTATIONARY,
                   zero, zero,
                   one, one,
-                  NULL, rhs_3, NULL);
+                  nullptr, rhs_3, nullptr);
 
 REGISTER_FUNCTION(f=sin(x)+cos(y),
                   STATIONARY,
                   bottom_top_2, bottom_top_2,
                   right_left_2, right_left_2,
-                  rhs_2, NULL, U_2);
+                  rhs_2, nullptr, U_2);
 
 REGISTER_FUNCTION(f=2*(x-x^2+y-y^2),
                   STATIONARY,
                   zero, zero,
                   zero, zero,
-                  rhs_1, NULL, U_1);
+                  rhs_1, nullptr, U_1);
 
 
-static void get_func_by_id(unsigned idx, chp_func *func)
+func::func(std::string const& name, func::type type,
+           rhs_t rhs, rhs_unsta_t rhs_unsta, border_t bottom,
+           border_t top, border_t right, border_t left, U_t U):
+    _type(type), _name(name), _rhs(rhs), _rhs_unsta(rhs_unsta),
+    _bottom(bottom), _top(top), _right(right), _left(left), _U(U)
 {
-    if (idx >= func_list_length) {
-        fprintf(stderr, "No such func!\n");
-        exit(EXIT_FAILURE);
-
-    }
-
-    chp_func *l = func_list;
-    while (idx--)
-        l = l->next;
-
-    *func = *l;
+    func_list.push_back(this);
 }
 
-void chp_func_init(chp_func *func, unsigned idx, chp_proc *P)
+
+const func& func::specialize_rank(proc const &P)
 {
-    memset(func, 0, sizeof*func);
-    get_func_by_id(idx, func);
+    if (P.rank() > 0)
+        _left = zero;
 
-    if (P->rank > 0)
-        func->left = zero;
+    if (P.rank() < P.size()-1)
+        _right = zero;
 
-    if (P->rank < P->group_size-1)
-        func->right = zero;
+    return *this;
 }
 
-void chp_print_func_list(void)
+const func& func::get_func(unsigned idx, proc const& P)
 {
-    printf("Function list:\n");
-    chp_func *list = func_list;
+    if (idx >= func_list.size())
+        throw exception("Cette fonction n'existe pas");
+    return func_list[idx]->specialize_rank(P);
+}
+
+void func::print_list()
+{
+    std::cout << "Function list:" << std::endl;
     int i = 0;
-    while (list != NULL) {
-        printf("%d: %s\n", i, list->name);
-        list = list->next;
-        ++ i;
-    }
-
+    for (auto f : func_list)
+        std::cout << i++ << ": " << f->_name << std::endl;
 }

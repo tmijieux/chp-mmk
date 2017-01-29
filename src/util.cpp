@@ -1,9 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <limits.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <climits>
+#include <cassert>
+#include <algorithm>
+
 #include <malloc.h>
 
 #include "util.h"
@@ -31,7 +33,7 @@ void tdp_matrix_print(int m/*rows*/, int n/*columns*/,
 double *tdp_matrix_new(int m/*rows*/, int n/*columns*/)
 {
     double *d;
-    d = calloc(m*n, sizeof*d);
+    d = (double*) calloc(m*n, sizeof*d);
     return d;
 }
 
@@ -60,7 +62,7 @@ void tdp_matrix_one(int m/*rows*/, int n/*columns*/,
                     double value, double *mat, int lda/*leading dimension*/)
 {
     tdp_matrix_zero(m, n, mat);
-    int M = min(m, n);
+    int M = std::min(m, n);
     for (int j = 0; j < M; ++j)
         mat[j*lda+j] = value;
 }
@@ -85,7 +87,7 @@ void tdp_matrix_3one(int m/*rows*/, int n/*columns*/,
                      double *mat, int lda/*leading dimension*/)
 {
     tdp_matrix_zero(m, n, mat);
-    int M = min(m, n);
+    int M = std::min(m, n);
 
     mat[0] = v1;
     mat[1] = v2;
@@ -104,7 +106,7 @@ void tdp_matrix_3one(int m/*rows*/, int n/*columns*/,
 double *tdp_vector_new(int m)
 {
     double *d;
-    d = calloc(m, sizeof*d);
+    d = (double*) calloc(m, sizeof*d);
     return d;
 }
 
@@ -146,7 +148,7 @@ void tdp_vector_print(int m, double *v, FILE *out)
 double *tdp_cache_garbage(void)
 {
     uint64_t S = tdp_get_cache_size(3)*10;
-    double *a = memalign(64, S);
+    double *a = (double*) memalign(64, S);
 
     uint64_t s = S * (((uint64_t)log(S))+1);
     while (s > 0) {

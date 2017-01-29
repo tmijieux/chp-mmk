@@ -1,4 +1,4 @@
-#include "error.h"
+#include "error.hpp"
 
 #define CHP_ERROR_TO_STRING(error) [CHP_ERROR_##error] = #error,
 

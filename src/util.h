@@ -11,14 +11,6 @@
 
 #include "error.h"
 
-#ifndef min
-#define min(x, y) ((x) < (y) ? (x) : (y))
-#endif
-
-#ifndef max
-#define max(x, y) ((x) > (y) ? (x) : (y))
-#endif
-
 #ifdef DEQUAL
 #undef DEQUAL
 #endif
@@ -37,20 +29,6 @@
 #define CALLOC_ARRAY(var, size) ((var) = calloc((size), sizeof(*(var))))
 #define ASSERT_MSG(msg, cond) assert(  ((void)(msg), (cond)) )
 
-#define SWAP_VARS(var1, var2)                                   \
-    do {                                                        \
-        /*_Static_assert( typeof((var1)) == typeof((var2)) );*/ \
-        typeof((var1)) tmp_MAXCRO__ = var1;                     \
-        var1 = var2;                                            \
-        var2 = tmp_MAXCRO__;                                    \
-    } while(0)                                                  \
-
-#define SWAP_POINTER(p1, p2)                    \
-    do {                                        \
-        void *tmp_MAXCRO__ = p1;                \
-        p1 = p2;                                \
-        p2 = tmp_MAXCRO__;                      \
-    } while(0)                                  \
 
 double *tdp_matrix_new(int m/*rows*/, int n/*columns*/);
 double *tdp_avx256_aligned_matrix_new(int m/*rows*/, int n/*columns*/);

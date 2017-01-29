@@ -2,6 +2,17 @@
 #define CBLAS_H
 #include <stddef.h>
 
+#ifdef __cplusplus
+#define BEGIN_C_DECL extern "C" {
+#define END_C_DECL }
+#else
+#define BEGIN_C_DECL
+#define END_C_DECL
+#endif
+
+
+BEGIN_C_DECL
+
 /*
  * Enumerated and derived types
  */
@@ -564,4 +575,8 @@ void cblas_zher2k(const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo,
                   void *C, const int ldc);
 
 void cblas_xerbla(int p, const char *rout, const char *form, ...);
-#endif
+
+
+END_C_DECL
+
+#endif // CBLAS_H

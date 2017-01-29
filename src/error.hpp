@@ -1,14 +1,43 @@
 #ifndef CHP_ERROR_H
 #define CHP_ERROR_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
+#include <cstring>
 #include <errno.h>
 
+#include <exception>
+#include <string>
+#include <boost/format.hpp>
+#include <sstream>
 
-#define CHP_ERROR_LIST(ERROR)                  \
+namespace chp {
+
+class exception : public std::exception {
+private:
+    boost::format _f;
+
+public:
+    template<typename  T>
+    exception &operator%(T a)
+    {
+        _f = _f % a;
+        return *this;
+    }
+
+    exception(const std::string& s): _f(s)  { }
+    const char *what()
+    {
+        std::stringstream ss;
+        ss << _f;
+        return ss.str().c_str();
+    }
+};
+
+};
+
+#define CHP_ERROR_LIST(ERROR)                   \
     ERROR(SUCCESS)                              \
 
 
@@ -28,14 +57,14 @@ char const *chp_errmsg(int errcode);
 #define __FILENAME__ (strrchr(__FILE__, '/') ?                  \
                       strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define chp_error(format_, ...)                                \
+#define chp_error(format_, ...)                                 \
     do {                                                        \
         fprintf(stderr, "ERROR: %s:%d|%s: ",  __FILENAME__ ,    \
                 __LINE__, __PRETTY_FUNCTION__);                 \
         fprintf(stderr, (format_), ##__VA_ARGS__);              \
     } while(0)
 
-#define chp_fatal(format_, ...)                                        \
+#define chp_fatal(format_, ...)                                         \
     do {                                                                \
         fprintf(stderr, "FATAL ERROR: %s:%d|%s: ",  __FILENAME__ ,      \
                 __LINE__, __PRETTY_FUNCTION__);                         \
@@ -43,7 +72,7 @@ char const *chp_errmsg(int errcode);
         exit(EXIT_FAILURE);                                             \
     } while(0)
 
-#define chp_warning(format_, ...)                              \
+#define chp_warning(format_, ...)                               \
     do {                                                        \
         fprintf(stderr, "WARNING: %s:%d|%s: ",  __FILENAME__ ,  \
                 __LINE__, __PRETTY_FUNCTION__);                 \
@@ -51,7 +80,7 @@ char const *chp_errmsg(int errcode);
     } while(0)
 
 #ifdef DEBUG
-#define chp_debug(format_, ...)                                        \
+#define chp_debug(format_, ...)                                         \
     do {                                                                \
         fprintf(stderr, "DEBUG: %s:%d|%s: " format_, __FILENAME__ ,     \
                 __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);          \
