@@ -27,7 +27,6 @@ private:
     void mpi_transfer_border_data_DIRICHLET(proc const& p);
     void transfer_border_data(proc const& p, transfer_type type);
 
-
 protected:
     static constexpr const double EPSILON = 1e-8;
 
@@ -35,9 +34,7 @@ protected:
     bool _stationary;
     equation _eq;
     solver *_S;
-
-
-    std::vector<double> _tmp[2];
+    vec _tmp[2];
 
 public:
     schwarz_solver(proc& p, struct gengetopt_args_info *opt);

@@ -44,7 +44,7 @@ void schwarz_solver::init_mpi_type()
     MPI_Type_commit(&column_type);
 }
 
-void schwarz_solver::mpi_transfer_border_data_NEUMANN(proc const& p)
+void schwarz_solver::mpi_transfer_border_data_NEUMANN(const proc& p)
 {
     int rank = p.rank(), group_size = p.size();
     int Ny = _eq.Ny, Nx = _eq.Nx;
@@ -54,8 +54,8 @@ void schwarz_solver::mpi_transfer_border_data_NEUMANN(proc const& p)
     MPI_Status st[4];
     memset(st, 0, sizeof st);
 
-    double *tmp_right = &_tmp[0][0];
-    double *tmp_left = &_tmp[1][0];
+    double *tmp_right = _tmp[0];
+    double *tmp_left = _tmp[1];
 
     cblas_dcopy(Ny, _eq.U1+_eq.next_border_col2, Nx, tmp_right, 1);
     cblas_daxpy(Ny, -1.0, _eq.U1+_eq.next_border_col, Nx, tmp_right, 1);
@@ -84,7 +84,7 @@ void schwarz_solver::mpi_transfer_border_data_NEUMANN(proc const& p)
     cblas_daxpy(Ny, 1.0, _eq.U1, Nx, _eq.left, 1);
 }
 
-void schwarz_solver::mpi_transfer_border_data_DIRICHLET(proc const& p)
+void schwarz_solver::mpi_transfer_border_data_DIRICHLET(const proc& p)
 {
     int rank = p.rank(), group_size = p.size();
     int Ny = _eq.Ny;
@@ -111,7 +111,7 @@ void schwarz_solver::mpi_transfer_border_data_DIRICHLET(proc const& p)
     MPI_Waitall(4, r, st);
 }
 
-void schwarz_solver::transfer_border_data(proc const& p, transfer_type type)
+void schwarz_solver::transfer_border_data(const proc& p, transfer_type type)
 {
     if (type == TRANSFER_NEUMANN)
         mpi_transfer_border_data_NEUMANN(p);
@@ -149,7 +149,7 @@ bool schwarz_solver::stop_condition(int step)
     return false;
 }
 
-void schwarz_solver::solve_stationary(proc const &p)
+void schwarz_solver::solve_stationary(const proc &p)
 {
     bool quit = false;
     int schwarz_step = 0;
@@ -176,7 +176,7 @@ void schwarz_solver::solve_stationary(proc const &p)
     output(filename, _eq.Nx, _eq.Ny, _eq.X, _eq.Y, _eq.U1);
 }
 
-void schwarz_solver::solve_unstationary(proc const& p)
+void schwarz_solver::solve_unstationary(const proc& p)
 {
     const int print_step = 100;
     double t = 0.0;
@@ -220,16 +220,13 @@ schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info *opt):
     _func(func::get_func(opt->function_arg, p)),
     _stationary(_func._type == func::STATIONARY),
     _eq(p, opt, _stationary),
-    _S(NULL)
+    _S(solver::make_solver(_eq, opt->solver_arg))
 {
     if (_func._type != func::STATIONARY && _func._type != func::UNSTATIONARY)
         throw exception("invalid method type");
 
     _eq.border_init(_func);
-
     init_mpi_type();
-
-    _S = solver::make_solver(_eq, opt->solver_arg);
 
     for (int i = 0; i < 2; ++i)
         _tmp[i].resize(_eq.Ny);

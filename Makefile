@@ -24,9 +24,7 @@ endif
 
 OBJ=    obj/cmdline.o \
 	obj/main.o \
-	obj/error.o \
 	obj/perf/perf.o \
-	obj/util.o \
 	obj/solver.o \
 	obj/func.o \
 	obj/equation.o \
@@ -36,7 +34,6 @@ OBJ=    obj/cmdline.o \
 
 obj_test_driver = \
 	obj/test_driver.o \
-	obj/util.o \
 	obj/solver.o \
 	obj/equation.o \
 	obj/func.o

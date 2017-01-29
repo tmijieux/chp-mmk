@@ -1,4 +1,5 @@
-#include <float.h>
+#include <cfloat>
+#include <cmath>
 #include <mpi.h>
 
 #include "equation.hpp"
@@ -48,7 +49,7 @@ void equation::init_grid()
         Y[i] = Ly_min + (i+1)*dy;
 }
 
-void equation::init_prop(proc const& P, int NNX, int NNY, int recouvr, bool stationary)
+void equation::init_prop(const proc& P, int NNX, int NNY, int recouvr, bool stationary)
 {
     Nx = NNX / P.size();
     Ny = NNY;
@@ -86,21 +87,21 @@ void equation::init_prop(proc const& P, int NNX, int NNY, int recouvr, bool stat
 
 void equation::alloc()
 {
-    top = tdp_vector_new(Nx);
-    bottom = tdp_vector_new(Nx);
-    right = tdp_vector_new(Ny);
-    left = tdp_vector_new(Ny);
+    top.resize(Nx);
+    bottom.resize(Nx);
+    right.resize(Ny);
+    left.resize(Ny);
 
-    X = tdp_vector_new(Nx);
-    Y = tdp_vector_new(Ny);
+    X.resize(Nx);
+    Y.resize(Ny);
 
-    rhs = tdp_vector_new(N);
-    rhs_f = tdp_vector_new(N);
-    U0 = tdp_vector_new(N);
-    U1 = tdp_vector_new(N);
+    rhs.resize(N);
+    rhs_f.resize(N);
+    U0.resize(N);
+    U1.resize(N);
 }
 
-equation::equation(proc const& P, struct gengetopt_args_info *opt, bool stationary):
+equation::equation(const proc& P, struct gengetopt_args_info *opt, bool stationary):
     Lx(opt->Lx_arg), Ly(opt->Ly_arg), Nit(opt->Nit_arg), Tmax(opt->Tmax_arg)
 {
     init_prop(P, opt->resolutionX_arg, opt->resolutionY_arg, opt->recouvr_arg, stationary);
@@ -108,20 +109,6 @@ equation::equation(proc const& P, struct gengetopt_args_info *opt, bool stationa
     alloc();
 
     init_grid();
-}
-
-equation::~equation()
-{
-    free(top);
-    free(bottom);
-    free(right);
-    free(left);
-    free(X);
-    free(Y);
-    free(rhs);
-    free(rhs_f);
-    free(U0);
-    free(U1);
 }
 
 void equation::border_init(func const &f)

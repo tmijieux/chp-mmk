@@ -27,7 +27,6 @@ public:
     virtual ~solver() {}
 };
 
-
 class gauss_seidel_solver : public solver {
 private:
     void impl(const double * __restrict__ rhs, double *__restrict__ X_new,
@@ -37,7 +36,6 @@ private:
 public:
     gauss_seidel_solver(equation const& eq) : solver(eq) {}
 };
-
 
 class jacobi_solver : public solver {
 private:
