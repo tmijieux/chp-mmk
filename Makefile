@@ -1,12 +1,13 @@
-TARGET=projCHP test_driver
-CFLAGS=-std=gnu99 -g -Wall -Wextra -fdiagnostics-color=auto
-LDFLAGS=-lm
+TARGET=projCHP #test_driver
+CFLAGS=-std=gnu99 -g -Wall -Wextra -fdiagnostics-color=auto -pg -funroll-loops
+LDFLAGS= -pg -funroll-loops
+LIBS=-lm
 GENGETOPT=gengetopt
 CC=mpicc
 
 ifdef DEBUG
 CFLAGS+=-ggdb -O0 -DDEBUG=1 -fsanitize=address -fsanitize=undefined
-LDFLAGS+=-g-fsanitize=address -fsanitize=undefined
+LDFLAGS+=-g -fsanitize=address -fsanitize=undefined
 else
 CFLAGS+=-O3 -march=native
 endif
@@ -57,7 +58,7 @@ obj/perf:
 -include $(DEP)
 
 projCHP: $(OBJ)
-	$(CC) $^ -o $@ $(LDFLAGS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 test_driver: $(OBJ_test_driver)
 	$(CC) $^ -o $@ $(LDFLAGS) -lgfortran

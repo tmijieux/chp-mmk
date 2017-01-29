@@ -16,3 +16,4 @@ test_driver
 sol/
 err.0
 out.0
+gmon.out

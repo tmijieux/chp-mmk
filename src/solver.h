@@ -14,13 +14,13 @@ struct chp_solver_ {
     double B, Cx, Cy;
     int (*solve)(int Nx, int Ny, const double B,
                  const double Cx, const double Cy,
-                 double const *rhs, double *X, double *tmp[]);
+                 double const * restrict rhs, double * restrict X, double *restrict tmp[]);
     double *tmp[4];
 };
 
-void gemv_5diag(
-    int const Nx, int const Ny, double const B,
-    double const Cx, double const Cy,  double const *X, double *AX);
+/* void gemv_5diag( */
+/*     int const Nx, int const Ny, double const B, */
+/*     double const Cx, double const Cy,  double const *X, double *AX); */
 void chp_solver_init(chp_solver *S, chp_equation *eq, const char *solver_arg);
 int chp_solver_run(chp_solver *S, double const *rhs, double const *X0, double *X);
 void chp_solver_free(chp_solver *S);

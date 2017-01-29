@@ -56,7 +56,7 @@ static void chp_mpi_init_type(const chp_equation *eq)
 }
 
 static void
-chp_mpi_transfer_border_data_NEUMANN( chp_proc *p, chp_equation *eq)
+chp_mpi_transfer_border_data_NEUMANN(chp_proc *p, chp_equation *eq, double *restrict tmp[])
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny, Nx = eq->Nx;
@@ -66,9 +66,8 @@ chp_mpi_transfer_border_data_NEUMANN( chp_proc *p, chp_equation *eq)
     MPI_Status st[4];
     memset(st, 0, sizeof st);
 
-    double *tmp_right, *tmp_left;
-    MALLOC_ARRAY(tmp_right, eq->Ny);
-    MALLOC_ARRAY(tmp_left, eq->Ny);
+    double *tmp_right = tmp[0];
+    double *tmp_left = tmp[1];
 
     cblas_dcopy(Ny, eq->U1+eq->next_border_col2, Nx, tmp_right, 1);
     cblas_daxpy(Ny, -1.0, eq->U1+eq->next_border_col, Nx, tmp_right, 1);
@@ -95,13 +94,10 @@ chp_mpi_transfer_border_data_NEUMANN( chp_proc *p, chp_equation *eq)
 
     cblas_daxpy(Ny, 1.0, eq->U1+Ny-1, Nx, eq->right, 1);
     cblas_daxpy(Ny, 1.0, eq->U1, Nx, eq->left, 1);
-
-    free(tmp_right);
-    free(tmp_left);
 }
 
 static void
-chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq)
+chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq, double * restrict tmp[])
 {
     int rank = p->rank, group_size = p->group_size;
     int Ny = eq->Ny;
@@ -110,6 +106,7 @@ chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq)
         MPI_REQUEST_NULL, MPI_REQUEST_NULL };
     MPI_Status st[4];
     memset(st, 0, sizeof st);
+    (void) tmp;
 
     if (rank < group_size-1)
         MPI_Isend(eq->U1 + eq->next_border_col,
@@ -129,12 +126,13 @@ chp_mpi_transfer_border_data_DIRICHLET(chp_proc *p, chp_equation *eq)
 }
 
 static void
-chp_mpi_transfer_border_data(chp_proc *p, chp_equation *eq, chp_transfer_type type)
+chp_mpi_transfer_border_data(chp_proc *p, chp_equation *eq,
+                             chp_transfer_type type, double *restrict tmp[])
 {
     if (type == CHP_TRANSFER_NEUMANN)
-        chp_mpi_transfer_border_data_NEUMANN(p, eq);
+        chp_mpi_transfer_border_data_NEUMANN(p, eq, tmp);
     else if  (type == CHP_TRANSFER_DIRICHLET)
-        chp_mpi_transfer_border_data_DIRICHLET(p, eq);
+        chp_mpi_transfer_border_data_DIRICHLET(p, eq, tmp);
 }
 
 static bool
@@ -168,28 +166,28 @@ chp_stop_condition(chp_equation *eq, int step)
     return false;
 }
 
-
 static void
-solve_stationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
+solve_stationary(chp_proc *p, chp_schwarz_solver *sS)
 {
     bool quit = false;
     int schwarz_step = 0;
     int total_step = 0;
+    chp_equation *eq = &sS->eq;
+    chp_func *func = &sS->func;
+    chp_solver *S = &sS->S;
 
     chp_equation_rhs_init(eq, func, 0.0);
 
     while (!quit) {
         chp_equation_apply_border_cond_RHS(eq);
-        int s;
-        s = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
+        int s = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
         if (!p->rank)
             printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, s);
 
         total_step += s;
-        chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
+        chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET, sS->tmp);
         quit = chp_stop_condition(eq, schwarz_step);
         ++ schwarz_step;
-
     }
     if (!p->rank)
         printf("# schwarz_step = %d\n# total_step = %d\n", schwarz_step, total_step);
@@ -200,12 +198,15 @@ solve_stationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
 }
 
 static void
-solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
+solve_unstationary(chp_proc *p, chp_schwarz_solver *sS)
 {
     const int print_step = 100;
     double t = 0.0;
     int total_step = 0;
     int total_schwarz_step = 0;
+    chp_equation *eq = &sS->eq;
+    chp_func *func = &sS->func;
+    chp_solver *S = &sS->S;
 
     create_directory("sol");
 
@@ -218,7 +219,7 @@ solve_unstationary(chp_proc *p, chp_equation *eq, chp_func *func, chp_solver *S)
         while (!quit) {
             chp_equation_apply_border_cond_RHS(eq);
             total_step += chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
-            chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET);
+            chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET, sS->tmp);
             quit = chp_stop_condition(eq, schwarz_step);
             ++ schwarz_step;
         }
@@ -253,22 +254,27 @@ void chp_schwarz_solver_init(
 
     chp_equation_init(&S->eq, p, opt, S->stationary);
     chp_equation_border_init(&S->eq, &S->func);
-
     chp_mpi_init_type(&S->eq);
     chp_solver_init(&S->S, &S->eq, opt->solver_arg);
+
+    for (int i = 0; i < 2; ++i)
+        S->tmp[i] = tdp_vector_new(S->eq.Ny);
 }
 
 void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p)
 {
     if (S->stationary)
-        solve_stationary(p, &S->eq, &S->func, &S->S);
+        solve_stationary(p, S);
     else
-        solve_unstationary(p, &S->eq, &S->func, &S->S);
+        solve_unstationary(p, S);
 }
 
 void chp_schwarz_solver_free(chp_schwarz_solver *S)
 {
     chp_equation_free(&S->eq);
     chp_solver_free(&S->S);
+    for (int i = 0; i < 2; ++i)
+        free(S->tmp[i]);
+
     memset(S, 0, sizeof*S);
 }

@@ -26,6 +26,7 @@ struct chp_schwarz_solver_ {
     chp_equation eq;
     chp_func func;
 
+    double *tmp[2];
 };
 
 void chp_schwarz_solver_init(
