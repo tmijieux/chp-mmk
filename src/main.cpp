@@ -7,15 +7,12 @@
 #include "error.hpp"
 #include "func.hpp"
 
-using namespace chp;
-
-
 struct config : public gengetopt_args_info {
     config(int &argc, char **&argv) {
         cmdline_parser(argc, argv, this);
         if (this->list_function_flag) {
-            func::print_list();
-            throw exception("");
+            chp::func::print_list();
+            throw chp::exception("");
         }
     }
     ~config() { cmdline_parser_free(this); }
@@ -25,9 +22,9 @@ int main(int argc, char *argv[])
 {
     try {
         config opt(argc, argv);
-        proc P;
-        timer T;
-        schwarz_solver S(P, &opt);
+        chp::proc P;
+        chp::timer T;
+        chp::schwarz_solver S(P, &opt);
 
         T.start();
         S.run(P);
@@ -35,7 +32,7 @@ int main(int argc, char *argv[])
 
         T.print(P);
 
-    } catch (exception &e) {
+    } catch (chp::exception &e) {
         std::cout << e.what() << std::endl;
     }
     return EXIT_SUCCESS;
