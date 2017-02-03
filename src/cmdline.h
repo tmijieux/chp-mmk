@@ -68,7 +68,9 @@ struct gengetopt_args_info
   double Tmax_arg;	/**< @brief Durée de l'évolution en secondes (default='10.0').  */
   char * Tmax_orig;	/**< @brief Durée de l'évolution en secondes original value given at command line.  */
   const char *Tmax_help; /**< @brief Durée de l'évolution en secondes help description.  */
-
+  int verbose_flag;	/**< @brief Toggle verbose output (default=on).  */
+  const char *verbose_help; /**< @brief Toggle verbose output help description.  */
+  
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
@@ -81,6 +83,7 @@ struct gengetopt_args_info
   unsigned int solver_given ;	/**< @brief Whether solver was given.  */
   unsigned int Nit_given ;	/**< @brief Whether Nit was given.  */
   unsigned int Tmax_given ;	/**< @brief Whether Tmax was given.  */
+  unsigned int verbose_given ;	/**< @brief Whether verbose was given.  */
 
 } ;
 
@@ -169,7 +172,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure
+ * Initializes all the fields a cmdline_parser_params structure 
  * to their default values
  * @param params the structure to initialize
  */
