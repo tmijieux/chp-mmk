@@ -70,7 +70,7 @@ struct gengetopt_args_info
   const char *Tmax_help; /**< @brief Durée de l'évolution en secondes help description.  */
   int verbose_flag;	/**< @brief Toggle verbose output (default=on).  */
   const char *verbose_help; /**< @brief Toggle verbose output help description.  */
-  
+
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int function_given ;	/**< @brief Whether function was given.  */
@@ -172,7 +172,7 @@ void cmdline_parser_print_help(void);
 void cmdline_parser_print_version(void);
 
 /**
- * Initializes all the fields a cmdline_parser_params structure 
+ * Initializes all the fields a cmdline_parser_params structure
  * to their default values
  * @param params the structure to initialize
  */

@@ -11,6 +11,7 @@ typedef struct chp_schwarz_solver_ chp_schwarz_solver;
 #include "func.h"
 #include "cmdline.h"
 #include "solver.h"
+#include "schwarz_printer.h"
 
 
 #define SCHWARZ_EPSILON   1e-8
@@ -35,7 +36,7 @@ struct chp_schwarz_solver_ {
 
 void chp_schwarz_solver_init(
     chp_schwarz_solver *S, chp_proc *p, struct gengetopt_args_info *opt);
-void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p, bool verbose_output);
+void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p, chp_schwarz_printer *pr);
 void chp_schwarz_solver_free(chp_schwarz_solver *S);
 
 #endif // CHP_SCHWARZ_SOLVER_H

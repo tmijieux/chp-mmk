@@ -32,6 +32,7 @@ OBJ=    obj/cmdline.o \
 	obj/equation.o \
 	obj/proc.o \
 	obj/schwarz_solver.o \
+	obj/schwarz_printer.o \
 	obj/timer.o
 
 obj_test_driver = \
