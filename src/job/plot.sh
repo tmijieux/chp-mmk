@@ -1,19 +1,27 @@
 #!/bin/bash
 
+
+function genparm () {
+    local i=$1
+    local j=$((10#$i))
+    ./param $j 20000 > ./job_$i.sh
+}
+
+
 if [[ "$1" == "genjob" ]]; then
-    for i in $(seq -w 13); do
-        j=$((10#$i))
-        ./param $j 20000 > ./job_${i}x$i.sh
+    genparm 001
+    for i in $(seq -w 20 20 180); do
+        genparm $i
     done
     exit 0
 fi
 
 if [[ "$1" == "batch" ]]; then
     for i in job_*; do sbatch ./$i; done
-    while squeue -o '%u' | grep -q ${USER}; do sleep 1; done
+     while squeue -o '%u' | grep -q ${USER}; do sleep 1; done
 fi
 
-cat out.* | grep \# | sed 's/# //' | sed 's/ s//' | sort -n > mpi.data 
+cat out.* | grep \# | grep s$ | sed 's/# //' | sed 's/ s//' | sort -n > mpi.data
 
 read -d '' compute << 'EOF'
 f = open("mpi.data"); 
