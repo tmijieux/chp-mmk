@@ -156,16 +156,13 @@ solve_stationary(chp_proc *p, chp_schwarz_solver *sS, double t, chp_schwarz_prin
         chp_equation_apply_border_cond_RHS(eq);
         int step = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
         total_step += step;
-
-        /* if (output && !p->rank) */
-        /*     printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, step); */
-
+        chp_schwarz_printer_stationary(pr, schwarz_step, step);
         chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET, sS->tmp);
         quit = chp_stop_condition(eq, schwarz_step);
         ++ schwarz_step;
     }
 
-    chp_schwarz_printer_stationary(pr, schwarz_step, total_step, eq);
+    chp_schwarz_printer_stationary_final(pr, schwarz_step, total_step, eq);
     pair q = {.a = schwarz_step, .b = total_step};
     return q;
 }
@@ -175,15 +172,15 @@ solve_unstationary(chp_proc *p, chp_schwarz_solver *sS, chp_schwarz_printer *pr)
 {
     double t = 0.0;
     chp_equation *eq = &sS->eq;
-    chp_schwarz_printer PR;
+    chp_schwarz_printer PR_silent;
     int total_schwarz_step = 0, total_step = 0;
 
-    chp_schwarz_printer_init(&PR, p, false, false);
+    chp_schwarz_printer_init(&PR_silent, p, false, false);
     create_directory("sol");
 
     for (int i = 0; i < eq->Nit; ++i) {
         t += eq->dt;
-        pair q = solve_stationary(p, sS, t, &PR);
+        pair q = solve_stationary(p, sS, t, &PR_silent);
         total_schwarz_step += q.a;
         total_step += q.b;
         chp_schwarz_printer_unstationary(pr, i, eq);

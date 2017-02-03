@@ -19,8 +19,10 @@ struct chp_schwarz_printer_ {
 void chp_schwarz_printer_init(chp_schwarz_printer*pr, const chp_proc*p,
                               bool verbose, bool file);
 
-void chp_schwarz_printer_stationary(
+void chp_schwarz_printer_stationary_final(
     chp_schwarz_printer *pr, int schwarz_step, int total_step, const chp_equation *eq);
+void chp_schwarz_printer_stationary(
+    chp_schwarz_printer *pr, int schwarz_step, int step);
 void chp_schwarz_printer_unstationary(
     chp_schwarz_printer *pr, int step, const chp_equation *eq);
 void chp_schwarz_printer_unstationary_final(

@@ -22,7 +22,7 @@ chp_output(char const *filename, int const Nx, int const Ny,
     fclose(f);
 }
 
-void chp_schwarz_printer_stationary(
+void chp_schwarz_printer_stationary_final(
     chp_schwarz_printer *pr, int schwarz_step, int total_step, const chp_equation *eq)
 {
     if (pr->verbose_output) {
@@ -37,6 +37,14 @@ void chp_schwarz_printer_stationary(
     }
 }
 
+void chp_schwarz_printer_stationary(
+    chp_schwarz_printer *pr, int schwarz_step, int step)
+{
+    if (pr->verbose_output && !pr->p->rank)
+        printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, step);
+}
+
+
 void chp_schwarz_printer_unstationary(
     chp_schwarz_printer *pr, int step, const chp_equation *eq)
 {
@@ -48,7 +56,6 @@ void chp_schwarz_printer_unstationary(
             chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
         }
     }
-
 }
 
 void chp_schwarz_printer_unstationary_final(
@@ -69,5 +76,3 @@ void chp_schwarz_printer_init(
     pr->p = p;
     pr->print_freq = 100;
 }
-
-
