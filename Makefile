@@ -1,6 +1,6 @@
 TARGET=projCHP #test_driver
-CFLAGS=-std=gnu99 -g -Wall -Wextra -fdiagnostics-color=auto -pg -funroll-loops
-LDFLAGS= -pg -funroll-loops
+CFLAGS=-std=gnu99 -g -Wall -Wextra -fdiagnostics-color=auto -funroll-loops
+LDFLAGS= -funroll-loops
 LIBS=-lm
 GENGETOPT=gengetopt
 CC=mpicc

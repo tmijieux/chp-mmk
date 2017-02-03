@@ -33,20 +33,6 @@ chp_output(char const *filename, int const Nx, int const Ny,
     fclose(f);
 }
 
-/* static void */
-/* read_param(char const *filename, int *Nx, int *Ny, */
-/*            double *Lx, double *Ly, double *D) */
-/* { */
-/*     FILE *f = fopen(filename, "r"); */
-/*     if (f == NULL) { */
-/*         perror(filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     fscanf(f, "%d %d %lg %lg %lg", Nx, Ny, Lx, Ly, D); */
-/*     fclose(f); */
-/* } */
-
-
 MPI_Datatype column_type;
 
 static void chp_mpi_init_type(const chp_equation *eq)
@@ -167,78 +153,55 @@ chp_stop_condition(chp_equation *eq, int step)
 }
 
 static void
-solve_stationary(chp_proc *p, chp_schwarz_solver *sS)
+solve_stationary(chp_proc *p, chp_schwarz_solver *sS, double t, bool output)
 {
-    bool quit = false;
-    int schwarz_step = 0;
-    int total_step = 0;
     chp_equation *eq = &sS->eq;
     chp_func *func = &sS->func;
     chp_solver *S = &sS->S;
 
-    chp_equation_rhs_init(eq, func, 0.0);
-
+    chp_equation_rhs_init(eq, func, t);
+    
+    bool quit = false;    
+    int schwarz_step = 0;
     while (!quit) {
         chp_equation_apply_border_cond_RHS(eq);
-        int s = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
-        if (!p->rank)
-            printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, s);
-
-        total_step += s;
+        int step = chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
         chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET, sS->tmp);
         quit = chp_stop_condition(eq, schwarz_step);
         ++ schwarz_step;
     }
-    if (!p->rank)
-        printf("# schwarz_step = %d\n# total_step = %d\n", schwarz_step, total_step);
 
-    char filename[100];
-    snprintf(filename, 100, "numeric.dat.%d", p->rank);
-    chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+    if (output) {
+        char filename[100];
+        snprintf(filename, 100, "numeric.dat.%d", p->rank);
+        chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+    }
 }
 
 static void
-solve_unstationary(chp_proc *p, chp_schwarz_solver *sS)
+solve_unstationary(chp_proc *p, chp_schwarz_solver *sS, bool output)
 {
     const int print_step = 100;
     double t = 0.0;
-    int total_step = 0;
-    int total_schwarz_step = 0;
     chp_equation *eq = &sS->eq;
-    chp_func *func = &sS->func;
-    chp_solver *S = &sS->S;
-
     create_directory("sol");
 
     for (int i = 0; i < eq->Nit; ++i) {
         t += eq->dt;
-        chp_equation_rhs_init(eq, func, t);
+        solve_stationary(p, sS, t, false);
 
-        int schwarz_step = 0;
-        bool quit = false;
-        while (!quit) {
-            chp_equation_apply_border_cond_RHS(eq);
-            total_step += chp_solver_run(S, eq->rhs, eq->U0, eq->U1);
-            chp_mpi_transfer_border_data(p, eq, CHP_TRANSFER_DIRICHLET, sS->tmp);
-            quit = chp_stop_condition(eq, schwarz_step);
-            ++ schwarz_step;
-        }
-        total_schwarz_step += schwarz_step;
-
-        if ((i % print_step) == 0) {
-            if (!p->rank)
-                printf("# time_step(%d): schwarz_step = %d\n", i, schwarz_step);
-
-            char filename[100];
-            snprintf(filename, 100,
-                     "sol/sol%d.dat.%d", i/print_step + 1, p->rank);
-            chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+        if (output) {
+            if ((i % print_step) == 0) {
+                char filename[100];
+                snprintf(filename, 100,
+                         "sol/sol%d.dat.%d", i/print_step + 1, p->rank);
+                chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
+            }
         }
     }
-
-    if (!p->rank)
-        printf("# total_schwarz_step = %d\n# total_step = %d\n",
-               total_schwarz_step, total_step);
+    if (output) {
+        
+    }
 }
 
 void chp_schwarz_solver_init(
@@ -261,12 +224,12 @@ void chp_schwarz_solver_init(
         S->tmp[i] = tdp_vector_new(S->eq.Ny);
 }
 
-void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p)
+void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p, bool voutput)
 {
     if (S->stationary)
-        solve_stationary(p, S);
+        solve_stationary(p, S, 0.0, voutput);
     else
-        solve_unstationary(p, S);
+        solve_unstationary(p, S, voutput);
 }
 
 void chp_schwarz_solver_free(chp_schwarz_solver *S)

@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     chp_schwarz_solver_init(&S, &P, &opt);
 
     chp_timer_start(&T);
-    chp_schwarz_solver_run(&S, &P);
+    chp_schwarz_solver_run(&S, &P, opt.verbose_flag);
     chp_timer_stop(&T);
 
     chp_timer_print(&T, &P);

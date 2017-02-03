@@ -1,0 +1,4 @@
+job_*.sh
+out.*
+err.*
+*.data

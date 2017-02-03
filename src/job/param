@@ -1,0 +1,38 @@
+#!/bin/bash
+
+l=$1 # group length
+s=$2 # grid size
+
+let "pc = l * l"
+if ((s%l)); then
+    let "s = s + l - (s%l)"
+fi
+
+let "n = (pc/20)"
+if ((pc % 20)); then
+    let "n = n+1"
+fi
+
+
+echo \#!/usr/bin/env bash
+echo 
+echo \#SBATCH --job-name=mx_${l}x$l
+echo \#SBATCH --output=out.${l}x$l
+echo \#SBATCH --error=err.${l}x$l
+echo \#SBATCH -p mistral
+echo \#SBATCH --time=02:00:00
+echo \#SBATCH --exclusive
+echo \#SBATCH --nodes=$n
+echo \#SBATCH --ntasks=$pc
+echo \#SBATCH --ntasks-per-node=20
+echo \#SBATCH --cpus-per-task 1
+echo 
+echo 
+echo WORKDIR=\${WORKDIR:-\${HOME}/conwaygameoflife/mpi}
+echo MPIEXEC=mpirun
+echo 
+echo cd \${WORKDIR}
+echo . ./.module.load
+echo 
+echo \${MPIEXEC} -np $pc ./life_mpi 10 $s
+echo 

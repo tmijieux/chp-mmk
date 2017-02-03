@@ -32,3 +32,5 @@ option "Nit" n "Nombre de pas de temps"
 
 option "Tmax" t "Durée de l'évolution en secondes"
        double optional default="10.0"
+
+option "verbose" v "Toggle verbose output" flag on

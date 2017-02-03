@@ -27,11 +27,15 @@ struct chp_schwarz_solver_ {
     chp_func func;
 
     double *tmp[2];
+
+    int solver_step;
+    int schwarz_step;
+    int time_step;
 };
 
 void chp_schwarz_solver_init(
     chp_schwarz_solver *S, chp_proc *p, struct gengetopt_args_info *opt);
-void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p);
+void chp_schwarz_solver_run(chp_schwarz_solver *S, chp_proc *p, bool verbose_output);
 void chp_schwarz_solver_free(chp_schwarz_solver *S);
 
 #endif // CHP_SCHWARZ_SOLVER_H
