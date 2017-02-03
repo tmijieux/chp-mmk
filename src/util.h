@@ -1,5 +1,5 @@
-#ifndef TDP_UTIL_H
-#define TDP_UTIL_H
+#ifndef CHP_UTIL_H
+#define CHP_UTIL_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -76,4 +76,4 @@ void tdp_print_cache_size(void);
 uint64_t tdp_get_cache_size(int id);
 double *tdp_cache_garbage(void);
 
-#endif // TDP_UTIL_H
+#endif // CHP_UTIL_H

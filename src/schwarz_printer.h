@@ -5,8 +5,12 @@
 
 typedef struct chp_schwarz_printer_ chp_schwarz_printer;
 
+#include "proc.h"
+#include "equation.h"
+
 struct chp_schwarz_printer_ {
     const chp_proc *p;
+    int print_freq;
     bool verbose_output;
     bool file_output;
 };

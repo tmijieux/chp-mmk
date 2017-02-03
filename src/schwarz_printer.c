@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "schwarz_printer.h"
 
 static void
@@ -28,7 +32,7 @@ void chp_schwarz_printer_stationary(
     }
     if (pr->file_output) {
         char filename[100];
-        snprintf(filename, 100, "numeric.dat.%d", p->rank);
+        snprintf(filename, 100, "numeric.dat.%d", pr->p->rank);
         chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
     }
 }
@@ -40,7 +44,7 @@ void chp_schwarz_printer_unstationary(
         if ((step % pr->print_freq) == 0) {
             char filename[100];
             snprintf(filename, 100,
-                     "sol/sol%d.dat.%d", i/print_step + 1, pr->p->rank);
+                     "sol/sol%d.dat.%d", step/pr->print_freq + 1, pr->p->rank);
             chp_output(filename, eq->Nx, eq->Ny, eq->X, eq->Y, eq->U1);
         }
     }
@@ -52,13 +56,14 @@ void chp_schwarz_printer_unstationary_final(
 {
     if (pr->verbose_output && !pr->p->rank) {
         printf("# schwarz_step = %d\n# total_step = %d\n", schwarz_step, total_step);
+    }
 }
 
 
 void chp_schwarz_printer_init(
     chp_schwarz_printer*pr, const chp_proc*p, bool verbose, bool file)
 {
-    memset(pr, 0 sizeof*pr);
+    memset(pr, 0, sizeof*pr);
     pr->verbose_output = verbose;
     pr->file_output = file;
     pr->p = p;
