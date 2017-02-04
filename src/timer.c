@@ -13,7 +13,7 @@ void chp_timer_stop(chp_timer *T)
     perf_diff(&T->p1, &T->p2);
 }
 
-void chp_timer_print(chp_timer *T, chp_proc *P)
+void chp_timer_print(chp_timer *T, chp_proc *P, int Recouvr)
 {
     uint64_t micro, max_t;
 

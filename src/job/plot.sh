@@ -9,8 +9,7 @@ function genparm () {
 
 
 if [[ "$1" == "genjob" ]]; then
-    genparm 001
-    for i in $(seq -w 20 20 180); do
+    for i in $(seq -w 1 1 20); do
         genparm $i
     done
     exit 0
@@ -18,7 +17,7 @@ fi
 
 if [[ "$1" == "batch" ]]; then
     for i in job_*; do sbatch ./$i; done
-     while squeue -o '%u' | grep -q ${USER}; do sleep 1; done
+    while squeue -o '%u' | grep -q ${USER}; do sleep 1; done
 fi
 
 cat out.* | grep \# | grep s$ | sed 's/# //' | sed 's/ s//' | sort -n > mpi.data

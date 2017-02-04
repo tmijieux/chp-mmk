@@ -12,6 +12,6 @@ struct chp_timer_ {
 
 void chp_timer_start(chp_timer *T);
 void chp_timer_stop(chp_timer *T);
-void chp_timer_print(chp_timer *T, chp_proc *P);
+void chp_timer_print(chp_timer *T, chp_proc *P, int recouvr);
 
 #endif // CHP_TIMER_H

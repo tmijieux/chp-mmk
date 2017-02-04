@@ -9,7 +9,6 @@ echo \#SBATCH --output=out.$pc
 echo \#SBATCH --error=err.$pc
 echo \#SBATCH -p mistral
 echo \#SBATCH --time=02:00:00
-echo \#SBATCH --exclusive
 echo \#SBATCH --ntasks=$pc
 echo \#SBATCH --ntasks-per-node=20
 echo \#SBATCH --cpus-per-task 1
@@ -21,5 +20,5 @@ echo
 echo cd \${WORKDIR}
 echo . ./.module.load
 echo 
-echo \${MPIEXEC} -np $pc ./projCHP -X 1000 -Y 1000 -f 0 -x 1.0 -y 1.0 -R 10 -g -v
-echo s
+echo export MKL_NUM_THREADS=1
+echo \${MPIEXEC} -np $pc ./projCHP -X 100 -Y 100 -f 0 -x 1.0 -y 1.0 -R 3 -g -v

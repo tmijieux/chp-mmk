@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     chp_schwarz_solver_run(&S, &P, &PR);
     chp_timer_stop(&T);
 
-    chp_timer_print(&T, &P);
+    chp_timer_print(&T, &P, opt.recouvr_arg);
 
     chp_schwarz_solver_free(&S);
     cmdline_parser_free(&opt);
