@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "equation.hpp"
 
 namespace chp {
@@ -58,6 +59,7 @@ public:
 };
 
 
+typedef std::shared_ptr<solver> solver_ptr;
 
 };
 

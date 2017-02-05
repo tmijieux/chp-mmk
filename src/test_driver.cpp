@@ -1,14 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <mpi.h>
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
-#include "error.h"
+#include "error.hpp"
 #include "perf/perf.h"
 
-#include "solver.h"
-#include "equation.h"
+#include "solver.hpp"
+#include "equation.hpp"
 #include "util.h"
 
 static void

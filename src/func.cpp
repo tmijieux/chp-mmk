@@ -125,8 +125,8 @@ REGISTER_FUNCTION(f=e^(-(x-(Lx/2)^2))*e^(-(y-(Ly/2)^2))*cos(PI/2*t),
 func::func(std::string const& name, func::type type,
            rhs_t rhs, rhs_unsta_t rhs_unsta, border_t bottom,
            border_t top, border_t right, border_t left, U_t U):
-    _type(type), _name(name), _rhs(rhs), _rhs_unsta(rhs_unsta),
-    _bottom(bottom), _top(top), _right(right), _left(left), _U(U)
+    m_type(type), m_name(name), m_rhs(rhs), m_rhs_unsta(rhs_unsta),
+    m_bottom(bottom), m_top(top), m_right(right), m_left(left), m_U(U)
 {
     func_list.push_back(this);
 }
@@ -134,10 +134,10 @@ func::func(std::string const& name, func::type type,
 const func& func::specialize_rank(proc const &P)
 {
     if (P.rank() > 0)
-        _left = zero;
+        m_left = zero;
 
     if (P.rank() < P.size()-1)
-        _right = zero;
+        m_right = zero;
 
     return *this;
 }
@@ -154,5 +154,5 @@ void func::print_list()
     std::cout << "Function list:" << std::endl;
     int i = 0;
     for (auto f : func_list)
-        std::cout << i++ << ": " << f->_name << std::endl;
+        std::cout << i++ << ": " << f->m_name << std::endl;
 }

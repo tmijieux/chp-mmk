@@ -1,5 +1,5 @@
-#ifndef TDP_UTIL_H
-#define TDP_UTIL_H
+#ifndef CHP_UTIL_H
+#define CHP_UTIL_H
 
 #define SQUARE(x) ((x)*(x))
 
@@ -12,9 +12,10 @@
 namespace chp {
 
 struct vec : public std::vector<double>  {
-    operator double* ()  { return &(*this)[0]; }
+    operator double* () { return &(*this)[0]; }
+    operator const double* () const { return &(*this)[0]; }
 };
 
 };
 
-#endif // TDP_UTIL_H
+#endif // CHP_UTIL_H

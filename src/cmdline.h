@@ -68,6 +68,10 @@ struct gengetopt_args_info
   double Tmax_arg;	/**< @brief Durée de l'évolution en secondes (default='10.0').  */
   char * Tmax_orig;	/**< @brief Durée de l'évolution en secondes original value given at command line.  */
   const char *Tmax_help; /**< @brief Durée de l'évolution en secondes help description.  */
+  int verbose_flag;	/**< @brief Toggle verbose output (default=on).  */
+  const char *verbose_help; /**< @brief Toggle verbose output help description.  */
+  int file_flag;	/**< @brief Toggle file output (default=on).  */
+  const char *file_help; /**< @brief Toggle file output help description.  */
 
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -81,6 +85,8 @@ struct gengetopt_args_info
   unsigned int solver_given ;	/**< @brief Whether solver was given.  */
   unsigned int Nit_given ;	/**< @brief Whether Nit was given.  */
   unsigned int Tmax_given ;	/**< @brief Whether Tmax was given.  */
+  unsigned int verbose_given ;	/**< @brief Whether verbose was given.  */
+  unsigned int file_given ;	/**< @brief Whether file was given.  */
 
 } ;
 

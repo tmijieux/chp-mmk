@@ -46,6 +46,8 @@ const char *gengetopt_args_info_help[] = {
   "  -s, --solver=STRING    Gradient Conjugué (CG), Jacobi (J), Gauss-Seidel (GS)\n                           (default=`CG')",
   "  -n, --Nit=INT          Nombre de pas de temps  (default=`2000')",
   "  -t, --Tmax=DOUBLE      Durée de l'évolution en secondes  (default=`10.0')",
+  "  -v, --verbose          Toggle verbose output  (default=on)",
+  "  -g, --file             Toggle file output  (default=on)",
     0
 };
 
@@ -84,6 +86,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->solver_given = 0 ;
   args_info->Nit_given = 0 ;
   args_info->Tmax_given = 0 ;
+  args_info->verbose_given = 0 ;
+  args_info->file_given = 0 ;
 }
 
 static
@@ -109,6 +113,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->Nit_orig = NULL;
   args_info->Tmax_arg = 10.0;
   args_info->Tmax_orig = NULL;
+  args_info->verbose_flag = 1;
+  args_info->file_flag = 1;
 
 }
 
@@ -129,6 +135,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->solver_help = gengetopt_args_info_help[9] ;
   args_info->Nit_help = gengetopt_args_info_help[10] ;
   args_info->Tmax_help = gengetopt_args_info_help[11] ;
+  args_info->verbose_help = gengetopt_args_info_help[12] ;
+  args_info->file_help = gengetopt_args_info_help[13] ;
 
 }
 
@@ -276,6 +284,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "Nit", args_info->Nit_orig, 0);
   if (args_info->Tmax_given)
     write_into_file(outfile, "Tmax", args_info->Tmax_orig, 0);
+  if (args_info->verbose_given)
+    write_into_file(outfile, "verbose", 0, 0 );
+  if (args_info->file_given)
+    write_into_file(outfile, "file", 0, 0 );
 
 
   i = EXIT_SUCCESS;
@@ -546,10 +558,12 @@ cmdline_parser_internal (
         { "solver",	1, NULL, 's' },
         { "Nit",	1, NULL, 'n' },
         { "Tmax",	1, NULL, 't' },
+        { "verbose",	0, NULL, 'v' },
+        { "file",	0, NULL, 'g' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVf:lX:Y:R:x:y:s:n:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVf:lX:Y:R:x:y:s:n:t:vg", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -679,6 +693,26 @@ cmdline_parser_internal (
               &(local_args_info.Tmax_given), optarg, 0, "10.0", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
               "Tmax", 't',
+              additional_error))
+            goto failure;
+
+          break;
+        case 'v':	/* Toggle verbose output.  */
+
+
+          if (update_arg((void *)&(args_info->verbose_flag), 0, &(args_info->verbose_given),
+              &(local_args_info.verbose_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "verbose", 'v',
+              additional_error))
+            goto failure;
+
+          break;
+        case 'g':	/* Toggle file output.  */
+
+
+          if (update_arg((void *)&(args_info->file_flag), 0, &(args_info->file_given),
+              &(local_args_info.file_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "file", 'g',
               additional_error))
             goto failure;
 

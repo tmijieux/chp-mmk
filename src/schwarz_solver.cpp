@@ -1,5 +1,5 @@
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <mpi.h>
 #include <sys/stat.h>
 
@@ -18,49 +18,31 @@ create_directory(char const *dirname)
     mkdir(dirname, S_IRWXU);
 }
 
-static void
-output(char const *filename, int const Nx, int const Ny,
-       double const *X, double const *Y, double const *U)
-{
-    FILE *f = fopen(filename, "w");
-    if (f == NULL) {
-        perror(filename);
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < Nx; ++i) {
-        for (int j = 0; j < Ny; ++j)
-            fprintf(f, "%g %g %g\n", X[i], Y[j], U[Nx*j+i]);
-        fprintf(f, "\n");
-    }
-    fclose(f);
-}
-
 MPI_Datatype column_type;
 
 void schwarz_solver::init_mpi_type()
 {
-    MPI_Type_vector(_eq.Ny, 1, _eq.Nx, MPI_DOUBLE, &column_type);
+    MPI_Type_vector(m_eq.Ny, 1, m_eq.Nx, MPI_DOUBLE, &column_type);
     MPI_Type_commit(&column_type);
 }
 
 void schwarz_solver::mpi_transfer_border_data_NEUMANN(const proc& p)
 {
     int rank = p.rank(), group_size = p.size();
-    int Ny = _eq.Ny, Nx = _eq.Nx;
+    int Ny = m_eq.Ny, Nx = m_eq.Nx;
     MPI_Request r[4] = {
         MPI_REQUEST_NULL, MPI_REQUEST_NULL,
         MPI_REQUEST_NULL, MPI_REQUEST_NULL };
     MPI_Status st[4];
     memset(st, 0, sizeof st);
 
-    double *tmp_right = _tmp[0];
-    double *tmp_left = _tmp[1];
+    double *tmp_right = m_tmp[0];
+    double *tmp_left = m_tmp[1];
 
-    cblas_dcopy(Ny, _eq.U1+_eq.next_border_col2, Nx, tmp_right, 1);
-    cblas_daxpy(Ny, -1.0, _eq.U1+_eq.next_border_col, Nx, tmp_right, 1);
-    cblas_dcopy(Ny, _eq.U1+_eq.prev_border_col2, Nx, tmp_left, 1);
-    cblas_daxpy(Ny, -1.0, _eq.U1+_eq.prev_border_col, Nx, tmp_left, 1);
+    cblas_dcopy(Ny, m_eq.U1+m_eq.next_border_col2, Nx, tmp_right, 1);
+    cblas_daxpy(Ny, -1.0, m_eq.U1+m_eq.next_border_col, Nx, tmp_right, 1);
+    cblas_dcopy(Ny, m_eq.U1+m_eq.prev_border_col2, Nx, tmp_left, 1);
+    cblas_daxpy(Ny, -1.0, m_eq.U1+m_eq.prev_border_col, Nx, tmp_left, 1);
 
     if (rank < group_size-1)
         MPI_Isend(tmp_right, Ny, MPI_DOUBLE, p.rank()+1,
@@ -71,23 +53,23 @@ void schwarz_solver::mpi_transfer_border_data_NEUMANN(const proc& p)
                   group_size+rank-1, MPI_COMM_WORLD, &r[1]);
 
     if (rank < group_size-1)
-        MPI_Irecv(_eq.right, Ny, MPI_DOUBLE,
+        MPI_Irecv(m_eq.right, Ny, MPI_DOUBLE,
                   p.rank()+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
 
     if (rank > 0)
-        MPI_Irecv(_eq.left, Ny, MPI_DOUBLE,
+        MPI_Irecv(m_eq.left, Ny, MPI_DOUBLE,
                   p.rank()-1, rank-1, MPI_COMM_WORLD, &r[3]);
 
     MPI_Waitall(4, r, st);
 
-    cblas_daxpy(Ny, 1.0, _eq.U1+Ny-1, Nx, _eq.right, 1);
-    cblas_daxpy(Ny, 1.0, _eq.U1, Nx, _eq.left, 1);
+    cblas_daxpy(Ny, 1.0, m_eq.U1+Ny-1, Nx, m_eq.right, 1);
+    cblas_daxpy(Ny, 1.0, m_eq.U1, Nx, m_eq.left, 1);
 }
 
 void schwarz_solver::mpi_transfer_border_data_DIRICHLET(const proc& p)
 {
     int rank = p.rank(), group_size = p.size();
-    int Ny = _eq.Ny;
+    int Ny = m_eq.Ny;
     MPI_Request r[4] = {
         MPI_REQUEST_NULL, MPI_REQUEST_NULL,
         MPI_REQUEST_NULL, MPI_REQUEST_NULL };
@@ -95,18 +77,18 @@ void schwarz_solver::mpi_transfer_border_data_DIRICHLET(const proc& p)
     memset(st, 0, sizeof st);
 
     if (rank < group_size-1)
-        MPI_Isend(_eq.U1 + _eq.next_border_col,
+        MPI_Isend(m_eq.U1 + m_eq.next_border_col,
                   1, column_type, p.rank()+1, rank, MPI_COMM_WORLD, &r[0]);
     if (rank > 0)
-        MPI_Isend(_eq.U1 + _eq.prev_border_col,
+        MPI_Isend(m_eq.U1 + m_eq.prev_border_col,
                   1, column_type, p.rank()-1,
                   group_size+rank-1, MPI_COMM_WORLD, &r[1]);
 
     if (rank < group_size-1)
-        MPI_Irecv(_eq.right, Ny, MPI_DOUBLE,
+        MPI_Irecv(m_eq.right, Ny, MPI_DOUBLE,
                   p.rank()+1, group_size+rank, MPI_COMM_WORLD, &r[2]);
     if (rank > 0)
-        MPI_Irecv(_eq.left, Ny, MPI_DOUBLE,
+        MPI_Irecv(m_eq.left, Ny, MPI_DOUBLE,
                   p.rank()-1, rank-1, MPI_COMM_WORLD, &r[3]);
     MPI_Waitall(4, r, st);
 }
@@ -121,20 +103,20 @@ void schwarz_solver::transfer_border_data(const proc& p, transfer_type type)
 
 bool schwarz_solver::stop_condition(int step)
 {
-    int N = _eq.N;
+    int N = m_eq.N;
     if (step == 0) {
-        std::swap(_eq.U1, _eq.U0);
+        std::swap(m_eq.U1, m_eq.U0);
         return false;
     }
 
     // U0 = ancienne solution
     //   (calculé au tour précédant ou vecteur nul pour le tour 0)
     // U1 = solution fraichement calculé
-    cblas_daxpy(N, -1, _eq.U1, 1, _eq.U0, 1); // U0 = U0 - U1
-    double n = cblas_dnrm2(N, _eq.U0, 1);
-    double b = cblas_dnrm2(N, _eq.U1, 1);
+    cblas_daxpy(N, -1, m_eq.U1, 1, m_eq.U0, 1); // U0 = U0 - U1
+    double n = cblas_dnrm2(N, m_eq.U0, 1);
+    double b = cblas_dnrm2(N, m_eq.U1, 1);
 
-    std::swap(_eq.U1, _eq.U0);
+    std::swap(m_eq.U1, m_eq.U0);
     // U0 pointe desormais vers la solution "fraichement calculé"
     // et U1 vers la différence des anciens U0-U1
 
@@ -143,99 +125,72 @@ bool schwarz_solver::stop_condition(int step)
     MPI_Allreduce(&v, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
     if (max < EPSILON) {
-        std::swap(_eq.U1, _eq.U0);
+        std::swap(m_eq.U1, m_eq.U0);
         return true;
     }
     return false;
 }
 
-void schwarz_solver::solve_stationary(const proc &p)
+std::pair<int,int>
+schwarz_solver::solve_stationary(const proc &p, const schwarz_printer& pr, double t)
 {
     bool quit = false;
     int schwarz_step = 0;
     int total_step = 0;
 
-    _eq.rhs_init(_func, 0.0);
+    m_eq.rhs_init(m_func, t);
 
     while (!quit) {
-        _eq.apply_border_cond_RHS();
-        int s = _S->solve(_eq.rhs, _eq.U0, _eq.U1);
-        if (!p.rank())
-            printf("schwarz_step(%d): solver_step = %d\n", schwarz_step, s);
-
-        total_step += s;
+        m_eq.apply_border_cond_RHS();
+        int step = m_solver->solve(m_eq.rhs, m_eq.U0, m_eq.U1);
+        pr.print_sta_step(schwarz_step, step);
+        total_step += step;
         transfer_border_data(p, TRANSFER_DIRICHLET);
         quit = stop_condition(schwarz_step);
         ++ schwarz_step;
     }
-    if (!p.rank())
-        printf("# schwarz_step = %d\n# total_step = %d\n", schwarz_step, total_step);
-
-    char filename[100];
-    snprintf(filename, 100, "numeric.dat.%d", p.rank());
-    output(filename, _eq.Nx, _eq.Ny, _eq.X, _eq.Y, _eq.U1);
+    pr.print_sta_fin(schwarz_step, total_step, m_eq);
+    return std::make_pair(schwarz_step, total_step);
 }
 
-void schwarz_solver::solve_unstationary(const proc& p)
+void schwarz_solver::solve_unstationary(const proc& p, const schwarz_printer& pr)
 {
-    const int print_step = 100;
     double t = 0.0;
-    int total_step = 0;
-    int total_schwarz_step = 0;
+    int step = 0, sstep = 0;
+    schwarz_printer silent_printer(p);
 
     create_directory("sol");
 
-    for (int i = 0; i < _eq.Nit; ++i) {
-        t += _eq.dt;
-        _eq.rhs_init(_func, t);
-
-        int schwarz_step = 0;
-        bool quit = false;
-        while (!quit) {
-            _eq.apply_border_cond_RHS();
-            total_step += _S->solve(_eq.rhs, _eq.U0, _eq.U1);
-            transfer_border_data(p, TRANSFER_DIRICHLET);
-            quit = stop_condition(schwarz_step);
-            ++ schwarz_step;
-        }
-        total_schwarz_step += schwarz_step;
-
-        if ((i % print_step) == 0) {
-            if (!p.rank())
-                printf("# time_step(%d): schwarz_step = %d\n", i, schwarz_step);
-
-            char filename[100];
-            snprintf(filename, 100,
-                     "sol/sol%d.dat.%d", i/print_step + 1, p.rank());
-            output(filename, _eq.Nx, _eq.Ny, _eq.X, _eq.Y, _eq.U1);
-        }
+    for (int i = 0; i < m_eq.Nit; ++i) {
+        t += m_eq.dt;
+        int s, ss;
+        std::tie(s, ss) = solve_stationary(p, silent_printer, t);
+        step += s; sstep += ss;
+        pr.print_unsta_step(i, ss, m_eq);
     }
-
-    if (!p.rank())
-        printf("# total_schwarz_step = %d\n# total_step = %d\n",
-               total_schwarz_step, total_step);
+    pr.print_unsta_fin(step, sstep);
 }
 
-schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info *opt):
-    _func(func::get_func(opt->function_arg, p)),
-    _stationary(_func._type == func::STATIONARY),
-    _eq(p, opt, _stationary),
-    _S(solver::make_solver(_eq, opt->solver_arg))
+schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info const &opt):
+    m_func(func::get_func(opt.function_arg, p)),
+    m_stationary(m_func.m_type == func::STATIONARY),
+    m_eq(p, opt, m_stationary),
+    m_solver(solver::make_solver(m_eq, opt.solver_arg))
 {
-    if (_func._type != func::STATIONARY && _func._type != func::UNSTATIONARY)
+    if (m_func.m_type != func::STATIONARY && m_func.m_type != func::UNSTATIONARY)
         throw exception("invalid method type");
 
-    _eq.border_init(_func);
+    m_eq.border_init(m_func);
     init_mpi_type();
 
     for (int i = 0; i < 2; ++i)
-        _tmp[i].resize(_eq.Ny);
+        m_tmp[i].resize(m_eq.Ny);
 }
 
-void schwarz_solver::run(proc &p)
+void schwarz_solver::run(proc &p, const schwarz_printer& pr)
 {
-    if (_stationary)
-        solve_stationary(p);
+    if (m_stationary)
+        solve_stationary(p, pr);
     else
-        solve_unstationary(p);
+        solve_unstationary(p, pr);
 }

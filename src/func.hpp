@@ -11,16 +11,17 @@
 namespace chp {
 
 class func {
+private:
+    static std::vector<func*> func_list;
+    const func& specialize_rank(proc const &);
 
 public:
-    static std::vector<func*> func_list;
 
     enum type {
         STATIONARY,
         UNSTATIONARY,
     };
 
-public:
     typedef void (*rhs_t)(int const,int const,double const*,double const*,double*);
     typedef void (*rhs_unsta_t)(int const,int const,
                                 double const*,double const*,double*,
@@ -29,23 +30,19 @@ public:
     typedef void (*U_t)(int const, int const, double const*, double const*,
                         double const, double const, double*);
 
-    type _type;
-    std::string _name;
+    type m_type;
+    std::string m_name;
 
-    rhs_t _rhs;
-    rhs_unsta_t _rhs_unsta;
-    border_t _bottom;
-    border_t _top;
-    border_t _right;
-    border_t _left;
-    U_t _U;
+    rhs_t m_rhs;
+    rhs_unsta_t m_rhs_unsta;
+    border_t m_bottom;
+    border_t m_top;
+    border_t m_right;
+    border_t m_left;
+    U_t m_U;
 
-private:
-    const func& specialize_rank(proc const &);
-public:
     func(std::string const&, func::type,
          rhs_t, rhs_unsta_t, border_t, border_t, border_t, border_t, U_t);
-
 
     static const func &get_func(unsigned idx, proc const &P);
     static void print_list();

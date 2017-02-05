@@ -1,6 +1,6 @@
 TARGET=projCHP #test_driver
-CFLAGS=-std=c++11 -g -Wall -Wextra -fdiagnostics-color=auto -pg -funroll-loops
-LDFLAGS= -pg -funroll-loops
+CFLAGS=-std=c++11 -g -Wall -Wextra -fdiagnostics-color=auto -funroll-loops
+LDFLAGS= -funroll-loops
 LIBS=-lm
 GENGETOPT=gengetopt
 CC=mpic++
@@ -29,6 +29,7 @@ OBJ=    obj/cmdline.o \
 	obj/func.o \
 	obj/equation.o \
 	obj/proc.o \
+	obj/schwarz_printer.o \
 	obj/schwarz_solver.o \
 	obj/timer.o
 

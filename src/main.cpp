@@ -6,6 +6,7 @@
 #include "timer.hpp"
 #include "error.hpp"
 #include "func.hpp"
+#include "schwarz_printer.hpp"
 
 struct config : public gengetopt_args_info {
     config(int &argc, char **&argv) {
@@ -24,10 +25,11 @@ int main(int argc, char *argv[])
         config opt(argc, argv);
         chp::proc P;
         chp::timer T;
-        chp::schwarz_solver S(P, &opt);
+        chp::schwarz_solver S(P, opt);
+        chp::schwarz_printer PR(P, opt);
 
         T.start();
-        S.run(P);
+        S.run(P, PR);
         T.stop();
 
         T.print(P);

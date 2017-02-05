@@ -1,12 +1,15 @@
 #ifndef CHP_SCHWARZ_SOLVER_H
 #define CHP_SCHWARZ_SOLVER_H
 
-#include "cmdline.h"
+#include <utility>
 
+#include "cmdline.h"
 #include "proc.hpp"
 #include "equation.hpp"
 #include "func.hpp"
 #include "solver.hpp"
+#include "schwarz_printer.hpp"
+#include "util.h"
 
 namespace chp {
 
@@ -19,8 +22,9 @@ public:
     };
 
 private:
-    void solve_stationary(proc const &p);
-    void solve_unstationary(proc const &p);
+    std::pair<int,int> solve_stationary(
+        proc const &p, const schwarz_printer& pr, double t = 0.0);
+    void solve_unstationary(proc const &p, const schwarz_printer& pr);
     bool stop_condition(int step);
     void init_mpi_type();
     void mpi_transfer_border_data_NEUMANN(proc const& p);
@@ -30,15 +34,15 @@ private:
 protected:
     static constexpr const double EPSILON = 1e-8;
 
-    const func& _func;
-    bool _stationary;
-    equation _eq;
-    solver *_S;
-    vec _tmp[2];
+    const func& m_func;
+    bool m_stationary;
+    equation m_eq;
+    solver_ptr m_solver;
+    vec m_tmp[2];
 
 public:
-    schwarz_solver(proc& p, struct gengetopt_args_info *opt);
-    void run(proc &p);
+    schwarz_solver(proc& p, struct gengetopt_args_info const &opt);
+    void run(proc &p, const schwarz_printer& pr);
 };
 
 };

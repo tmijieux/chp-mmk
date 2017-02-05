@@ -63,10 +63,10 @@ void equation::init_prop(const proc& P, int NNX, int NNY, int recouvr, bool stat
     Ly_min = 0.0;
     Ly_max = Ly;
 
-    if (P.rank() > 0)
-        prev_border_x = Lx_min + recouvrD;
-    if (P.rank() < P.size()-1)
-        next_border_x = Lx_max - recouvrD;
+    // if (P.rank() > 0)
+    prev_border_x = Lx_min + recouvrD;
+    // if (P.rank() < P.size()-1)
+    next_border_x = Lx_max - recouvrD;
 
     //printf("r=%d :: Nx=%d :: [%g, %g]\n", P.rank(), Nx, Lx_min, Lx_max);
     dx = (Lx_max-Lx_min) / (Nx+1);
@@ -101,32 +101,30 @@ void equation::alloc()
     U1.resize(N);
 }
 
-equation::equation(const proc& P, struct gengetopt_args_info *opt, bool stationary):
-    Lx(opt->Lx_arg), Ly(opt->Ly_arg), Nit(opt->Nit_arg), Tmax(opt->Tmax_arg)
+equation::equation(const proc& P, struct gengetopt_args_info const &opt, bool stationary):
+    Lx(opt.Lx_arg), Ly(opt.Ly_arg), Nit(opt.Nit_arg), Tmax(opt.Tmax_arg)
 {
-    init_prop(P, opt->resolutionX_arg, opt->resolutionY_arg, opt->recouvr_arg, stationary);
-    std::cerr << "DEBUG: " << Nx << std::endl;
+    init_prop(P, opt.resolutionX_arg, opt.resolutionY_arg, opt.recouvr_arg, stationary);
     alloc();
-
     init_grid();
 }
 
 void equation::border_init(func const &f)
 {
-    f._bottom(Nx, X, bottom, Ly_min);
-    f._top(Nx, X, top, Ly_max);
+    f.m_bottom(Nx, X, bottom, Ly_min);
+    f.m_top(Nx, X, top, Ly_max);
 
-    f._left(Ny, Y, left, Lx_min);
-    f._right(Ny, Y, right, Lx_max);
-    //f._U(Nx, Ny, X, Y, Lx_min, Lx_max, Ly, Uexact);
+    f.m_left(Ny, Y, left, Lx_min);
+    f.m_right(Ny, Y, right, Lx_max);
+    //f.m_U(Nx, Ny, X, Y, Lx_min, Lx_max, Ly, Uexact);
 }
 
 void equation::rhs_init(func const &f, double t)
 {
-    if (f._type == func::STATIONARY)
-        f._rhs(Nx, Ny, X, Y, rhs_f);
+    if (f.m_type == func::STATIONARY)
+        f.m_rhs(Nx, Ny, X, Y, rhs_f);
     else {
-        f._rhs_unsta(Nx, Ny, X, Y, rhs_f, Lx, Ly, t);
+        f.m_rhs_unsta(Nx, Ny, X, Y, rhs_f, Lx, Ly, t);
         cblas_daxpy(N, 1.0/dt, U0, 1, rhs_f, 1);
     }
 }

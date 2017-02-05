@@ -36,7 +36,7 @@ public:
     int next_border_col, prev_border_col;
     int next_border_col2, prev_border_col2;
 
-    equation(proc const& P, struct gengetopt_args_info *opt, bool stationary);
+    equation(proc const& P, struct gengetopt_args_info const& opt, bool stationary);
     void border_init(func const &f);
     void rhs_init(func const &f, double t);
     void apply_border_cond_RHS();
