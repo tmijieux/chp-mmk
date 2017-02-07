@@ -35,7 +35,7 @@ private:
 protected:
     static constexpr const double EPSILON = 1e-8;
 
-    const func& m_func;
+    const func m_func;
     bool m_stationary;
     equation m_eq;
     solver_ptr m_solver;

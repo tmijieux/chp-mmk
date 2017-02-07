@@ -42,18 +42,15 @@ obj_test_driver = \
 DEP=$(OBJ:.o=.d)
 OBJ_test_driver=$(obj_test_driver:.c=.o)
 
-%.o: %.mod
-
-
 all: obj obj/perf $(TARGET)
+
+-include $(DEP)
 
 obj:
 	mkdir -p obj/
 
 obj/perf:
 	mkdir -p obj/perf/
-
--include $(DEP)
 
 projCHP: $(OBJ)
 	$(CC) $^ -o $@ $(LDFLAGS) $(LIBS)
@@ -62,8 +59,8 @@ test_driver: $(OBJ_test_driver)
 	$(CC) $^ -o $@ $(LDFLAGS) -lgfortran
 
 obj/%.o: src/%.cpp
-	@$(CC) -MM $(CFLAGS) $^ > obj/$*.d
-	$(CC) -c $(CFLAGS) $^ -o $@
+	@$(CC) -MM -MT $@ $(CFLAGS) $< > obj/$*.d
+	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
 	$(RM) $(OBJ_test_driver) $(OBJ) $(DEP) *.d *.o

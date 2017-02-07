@@ -12,8 +12,8 @@
 namespace chp {
 
 struct vec : public std::vector<double>  {
-    operator double* () { return &(*this)[0]; }
-    operator const double* () const { return &(*this)[0]; }
+    inline operator double* () { return &(*this)[0]; }
+    inline operator const double* () const { return &(*this)[0]; }
 };
 
 };

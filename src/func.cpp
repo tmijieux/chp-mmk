@@ -142,11 +142,14 @@ const func& func::specialize_rank(proc const &P)
     return *this;
 }
 
-const func& func::get_func(unsigned idx, proc const& P)
+func func::get_func(unsigned idx, proc const& P)
 {
     if (idx >= func_list.size())
         throw exception("Cette fonction n'existe pas");
-    return func_list[idx]->specialize_rank(P);
+
+    func f{*func_list[idx]};
+    f.specialize_rank(P);
+    return std::move(f);
 }
 
 void func::print_list()
