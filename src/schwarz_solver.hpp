@@ -41,7 +41,10 @@ protected:
     vec m_tmp[2];
 
 public:
-    schwarz_solver(proc& p, struct gengetopt_args_info const &opt);
+    schwarz_solver(proc& p, struct gengetopt_args_infoc const &opt);
+    schwarz_solver(proc &p, int function, int resolutionX, int resolutionY,
+                   int recouvr, const string& solver);
+
     void run(proc &p, const schwarz_printer& pr);
 };
 

@@ -171,11 +171,17 @@ void schwarz_solver::solve_unstationary(const proc& p, const schwarz_printer& pr
     pr.print_unsta_fin(step, sstep);
 }
 
-schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info const &opt):
-    m_func(func::get_func(opt.function_arg, p)),
+
+schwarz_solver::
+schwarz_solver( proc &p, int function,
+                int resolutionX, int resolutionY,
+                int recouvr, const string& solver  ):
+    
+    m_func(func::get_func(function, p)),
     m_stationary(m_func.m_type == func::STATIONARY),
-    m_eq(p, opt, m_stationary),
-    m_solver(solver::make_solver(m_eq, opt.solver_arg))
+    m_eq(p, resolutionX, resolutionY, recouvr, m_stationary),
+    m_solver(solver::make_solver(m_eq, solver))
+    
 {
     if (m_func.m_type != func::STATIONARY && m_func.m_type != func::UNSTATIONARY)
         throw exception("invalid method type");
@@ -185,6 +191,16 @@ schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info const &opt):
 
     for (int i = 0; i < 2; ++i)
         m_tmp[i].resize(m_eq.Ny);
+}
+
+
+schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info const &opt):
+    schwarz_solver(
+        p, opt.function_arg,
+        opt.resolution_X_arg, opt.resolutionY_arg,
+        opt.recouvr_arg, opt.solver_arg
+    )
+{
 }
 
 void schwarz_solver::run(proc &p, const schwarz_printer& pr)
