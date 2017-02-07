@@ -39,7 +39,7 @@ schwarz_printer::
 print_unsta_step(int step, int schwarz_step, const equation& eq) const
 {
     if (m_console_output && !m_proc.rank())
-        std::cout << "# time_step("<< step << "): "
+        std::cout << "# time_step(" << step << "): "
                   << "schwarz_step = "<< schwarz_step
                   << std::endl;
 

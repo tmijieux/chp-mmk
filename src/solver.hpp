@@ -8,10 +8,14 @@
 
 namespace chp {
 
+class solver;
+
+typedef std::shared_ptr<solver> solver_ptr;
+
 class solver {
 
 protected:
-    static constexpr const double EPSILON  = 1e-8;
+    static constexpr const double EPSILON = 1e-8;
     static const int MAX_NB_ITER = 20000;
 
     int Nx, Ny, N;
@@ -28,38 +32,20 @@ public:
     virtual ~solver() {}
 };
 
-class gauss_seidel_solver : public solver {
-private:
-    void impl(const double * __restrict__ rhs, double *__restrict__ X_new,
-              const double *__restrict__ X_old);
-    virtual int _solve(const double *__restrict__ rhs, double *__restrict__ X) override;
+#define DEFINE_SUB_SOLVER(_solver_name)                                 \
+class _solver_name##_solver : public solver {                           \
+private:                                                                \
+void impl(const double * __restrict__ rhs, double *__restrict__ X_new,  \
+          const double *__restrict__ X_old);                            \
+virtual int _solve(const double *__restrict__ rhs, double *__restrict__ X) override; \
+public:                                                                 \
+_solver_name##_solver(equation const& eq) : solver(eq) {}               \
+}
 
-public:
-    gauss_seidel_solver(equation const& eq) : solver(eq) {}
-};
+DEFINE_SUB_SOLVER(jacobi);
+DEFINE_SUB_SOLVER(gauss_seidel);
+DEFINE_SUB_SOLVER(CG);
 
-class jacobi_solver : public solver {
-private:
-    void impl(const double * __restrict__ rhs, double *__restrict__ X_new,
-              const double *__restrict__ X_old);
-    virtual int _solve(const double *__restrict__ rhs, double *__restrict__ X) override;
-
-public:
-    jacobi_solver(equation const& eq) : solver(eq) {}
-};
-
-class CG_solver : public solver {
-private:
-    void impl(const double * __restrict__ rhs, double *__restrict__ X_new,
-              const double *__restrict__ X_old);
-    virtual int _solve(const double *__restrict__ rhs, double *__restrict__ X) override;
-
-public:
-    CG_solver(equation const& eq) : solver(eq) {}
-};
-
-
-typedef std::shared_ptr<solver> solver_ptr;
 
 };
 

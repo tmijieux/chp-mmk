@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {
     try {
         config opt(argc, argv);
-        chp::proc P;
+        chp::mpi_proc P;
         chp::timer T;
         chp::schwarz_solver S(P, opt);
         chp::schwarz_printer PR(P, opt);

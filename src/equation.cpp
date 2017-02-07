@@ -10,12 +10,12 @@
 
 using namespace chp;
 
-void equation::init_grid()
+void equation::set_border_col()
 {
     double m1 = DBL_MAX, M1 = DBL_MAX;
     double m2 = DBL_MAX, M2 = DBL_MAX;
+
     for (int i = 0; i < Nx; ++i) {
-        X[i] = Lx_min + (i+1)*dx;
         double l = fabs(X[i] - prev_border_x);
         if (l < m1) {
             m2 = m1;
@@ -44,6 +44,13 @@ void equation::init_grid()
 
     if (prev_border_col2 < prev_border_col)
         std::swap(prev_border_col2, prev_border_col);
+
+}
+
+void equation::init_grid()
+{
+    for (int i = 0; i < Nx; ++i)
+        X[i] = Lx_min + (i+1)*dx;
 
     for (int i = 0; i < Ny; ++i)
         Y[i] = Ly_min + (i+1)*dy;
@@ -101,12 +108,17 @@ void equation::alloc()
     U1.resize(N);
 }
 
-equation::equation(const proc& P, struct gengetopt_args_info const &opt, bool stationary):
-    Lx(opt.Lx_arg), Ly(opt.Ly_arg), Nit(opt.Nit_arg), Tmax(opt.Tmax_arg)
+equation::equation(const proc &P,
+                   double Lx_, double Ly_, int Nit_, double Tmax_,
+                   int NNX_, int NNY_, int recouvr_, bool stationary_):
+    Lx(Lx_), Ly(Ly_), Nit(Nit_), Tmax(Tmax_)
 {
-    init_prop(P, opt.resolutionX_arg, opt.resolutionY_arg, opt.recouvr_arg, stationary);
+    init_prop(P, NNX_, NNY_, recouvr_, stationary_);
     alloc();
     init_grid();
+
+    if (P.size() > 1)
+        set_border_col();
 }
 
 void equation::border_init(func const &f)

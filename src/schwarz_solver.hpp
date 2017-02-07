@@ -2,6 +2,7 @@
 #define CHP_SCHWARZ_SOLVER_H
 
 #include <utility>
+#include <string>
 
 #include "cmdline.h"
 #include "proc.hpp"
@@ -41,9 +42,10 @@ protected:
     vec m_tmp[2];
 
 public:
-    schwarz_solver(proc& p, struct gengetopt_args_infoc const &opt);
-    schwarz_solver(proc &p, int function, int resolutionX, int resolutionY,
-                   int recouvr, const string& solver);
+    schwarz_solver(proc& p, struct gengetopt_args_info const &opt);
+    schwarz_solver(proc &p, int function, double Lx, double Ly, int Nit, double Tmax,
+                   int resolutionX, int resolutionY,
+                   int recouvr, const std::string& solver);
 
     void run(proc &p, const schwarz_printer& pr);
 };

@@ -157,13 +157,13 @@ void schwarz_solver::solve_unstationary(const proc& p, const schwarz_printer& pr
 {
     double t = 0.0;
     int step = 0, sstep = 0;
-    schwarz_printer silent_printer(p);
+    schwarz_printer silent_printer{p};
 
     create_directory("sol");
 
     for (int i = 0; i < m_eq.Nit; ++i) {
-        t += m_eq.dt;
         int s, ss;
+        t += m_eq.dt;
         std::tie(s, ss) = solve_stationary(p, silent_printer, t);
         step += s; sstep += ss;
         pr.print_unsta_step(i, ss, m_eq);
@@ -171,17 +171,17 @@ void schwarz_solver::solve_unstationary(const proc& p, const schwarz_printer& pr
     pr.print_unsta_fin(step, sstep);
 }
 
-
 schwarz_solver::
 schwarz_solver( proc &p, int function,
+                double Lx, double Ly, int Nit, double Tmax,
                 int resolutionX, int resolutionY,
-                int recouvr, const string& solver  ):
-    
+                int recouvr, const std::string& solver  ):
+
     m_func(func::get_func(function, p)),
     m_stationary(m_func.m_type == func::STATIONARY),
-    m_eq(p, resolutionX, resolutionY, recouvr, m_stationary),
+    m_eq(p, Lx, Ly, Nit, Tmax, resolutionX, resolutionY, recouvr, m_stationary),
     m_solver(solver::make_solver(m_eq, solver))
-    
+
 {
     if (m_func.m_type != func::STATIONARY && m_func.m_type != func::UNSTATIONARY)
         throw exception("invalid method type");
@@ -193,11 +193,11 @@ schwarz_solver( proc &p, int function,
         m_tmp[i].resize(m_eq.Ny);
 }
 
-
 schwarz_solver::schwarz_solver(proc &p, struct gengetopt_args_info const &opt):
     schwarz_solver(
-        p, opt.function_arg,
-        opt.resolution_X_arg, opt.resolutionY_arg,
+        p, opt.function_arg, opt.Lx_arg, opt.Ly_arg,
+        opt.Nit_arg, opt.Tmax_arg,
+        opt.resolutionX_arg, opt.resolutionY_arg,
         opt.recouvr_arg, opt.solver_arg
     )
 {

@@ -4,14 +4,14 @@
 
 using namespace chp;
 
-proc::proc()
+mpi_proc::mpi_proc()
 {
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &m_group_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
 }
 
-proc::~proc()
+mpi_proc::~mpi_proc()
 {
     MPI_Finalize();
 }

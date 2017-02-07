@@ -15,6 +15,7 @@ private:
     void init_grid();
     void init_prop(proc const& P, int, int, int, bool);
     void alloc();
+    void set_border_col();
 
 public:
     int Nx, Ny, N;
@@ -36,13 +37,14 @@ public:
     int next_border_col, prev_border_col;
     int next_border_col2, prev_border_col2;
 
-    equation(proc const& P, struct gengetopt_args_info const& opt, bool stationary);
+    equation(const proc &P, double Lx_, double Ly_, int Nit_,
+             double Tmax_, int NNX_, int NNY_, int recouvr_, bool stationary_);
+
     void border_init(func const &f);
     void rhs_init(func const &f, double t);
     void apply_border_cond_RHS();
 };
 
 };
-
 
 #endif // CHP_EQUATION_H
